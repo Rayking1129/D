@@ -653,6 +653,86 @@
       font-weight: 900;
     }
 
+    .action-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      place-items: center;
+      background: rgba(10, 10, 12, .36);
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+      padding: 18px;
+    }
+
+    .action-modal.show {
+      display: grid;
+    }
+
+    .action-card {
+      width: min(430px, 100%);
+      padding: 24px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .96);
+      border: 1px solid rgba(255, 255, 255, .98);
+      box-shadow: 0 34px 100px rgba(0, 0, 0, .28);
+      text-align: center;
+      display: grid;
+      gap: 12px;
+    }
+
+    .action-icon {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 2px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #f0f0f3;
+      color: var(--ink);
+      font-weight: 900;
+      font-size: 28px;
+    }
+
+    .action-modal.loading .action-icon {
+      border: 3px solid #e5e5ea;
+      border-top-color: var(--blue);
+      background: transparent;
+      color: transparent;
+      animation: spin .85s linear infinite;
+    }
+
+    .action-modal.success .action-icon {
+      background: #e4f6e9;
+      color: var(--green);
+    }
+
+    .action-modal.error .action-icon {
+      background: #fff0f1;
+      color: var(--red);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .action-card h3 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -.02em;
+    }
+
+    .action-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .action-modal.loading .action-close {
+      display: none;
+    }
+
     .success-card h3 {
       margin: 0 0 8px;
       font-size: 24px;
@@ -1917,6 +1997,14 @@
   </div>
 
   <div class="toast" id="toast">已保存</div>
+  <div class="action-modal" id="actionModal" aria-hidden="true">
+    <div class="action-card">
+      <div class="action-icon" id="actionIcon">✓</div>
+      <h3 id="actionTitle">正在处理</h3>
+      <p id="actionMessage">请稍候，系统正在同步数据。</p>
+      <button class="btn secondary action-close" id="actionClose" type="button">知道了</button>
+    </div>
+  </div>
   <div class="success-modal" id="requestSuccessModal" aria-hidden="true">
     <div class="success-card">
       <div class="success-icon">✓</div>
@@ -2142,6 +2230,52 @@
       toast.classList.add("show");
       clearTimeout(showToast.timer);
       showToast.timer = setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function showActionModal({ type = "loading", title = "正在处理", message = "请稍候，系统正在同步数据。", autoClose = 0 } = {}) {
+      const modal = $("actionModal");
+      const icon = $("actionIcon");
+      modal.className = `action-modal show ${type}`;
+      modal.setAttribute("aria-hidden", "false");
+      $("actionTitle").textContent = title;
+      $("actionMessage").textContent = message;
+      icon.textContent = type === "error" ? "!" : "✓";
+      clearTimeout(showActionModal.timer);
+      if (autoClose) {
+        showActionModal.timer = setTimeout(hideActionModal, autoClose);
+      }
+    }
+
+    function hideActionModal() {
+      const modal = $("actionModal");
+      modal.classList.remove("show", "loading", "success", "error");
+      modal.setAttribute("aria-hidden", "true");
+      clearTimeout(showActionModal.timer);
+    }
+
+    async function runWithFeedback(task, feedback) {
+      showActionModal({
+        type: "loading",
+        title: feedback.loadingTitle,
+        message: feedback.loadingMessage
+      });
+      try {
+        const result = await task();
+        showActionModal({
+          type: "success",
+          title: feedback.successTitle,
+          message: typeof feedback.successMessage === "function" ? feedback.successMessage(result) : feedback.successMessage,
+          autoClose: Object.prototype.hasOwnProperty.call(feedback, "autoClose") ? feedback.autoClose : 1800
+        });
+        return result;
+      } catch (error) {
+        showActionModal({
+          type: "error",
+          title: feedback.errorTitle || "操作失败",
+          message: error.message || "请稍后重试，或检查网络与飞书连接。"
+        });
+        throw error;
+      }
     }
 
     function formatSize(bytes) {
@@ -2582,8 +2716,18 @@
       $("assetTags").addEventListener("change", (event) => updateRecord({ tags: normalizeTags(event.target.value) }, true, true, "标签已保存"));
       $("assetComment").addEventListener("input", (event) => updateRecord({ comment: event.target.value }, false, false));
       $("assetComment").addEventListener("blur", () => {
-        save("修改意见已保存");
-        persistRecord(state.selected).catch(() => showToast("飞书同步失败"));
+        save("");
+        runWithFeedback(
+          () => persistRecord(state.selected),
+          {
+            loadingTitle: "正在保存修改意见",
+            loadingMessage: "系统正在同步到飞书数据库，请稍候。",
+            successTitle: "修改意见已保存",
+            successMessage: "制作团队可以在素材详情中查看这条反馈。",
+            errorTitle: "修改意见保存失败",
+            autoClose: 1200
+          }
+        ).catch(() => {});
         render();
       });
       $("assetPublished").addEventListener("change", (event) => updateRecord({ published: event.target.checked }));
@@ -2631,15 +2775,43 @@
         showToast("请补充修改意见");
       }
       if (shouldSave) {
-        save(message === false ? "" : (message || recordFeedback(patch)));
-        persistRecord(file).catch(() => showToast("飞书同步失败"));
+        const feedbackMessage = message === false ? recordFeedback(patch) : (message || recordFeedback(patch));
+        save("");
+        runWithFeedback(
+          () => persistRecord(file),
+          {
+            loadingTitle: "正在保存操作",
+            loadingMessage: "系统正在同步你的修改，请稍候。",
+            successTitle: feedbackMessage,
+            successMessage: "操作已保存，并同步到飞书数据库。",
+            errorTitle: "保存失败",
+            autoClose: 1200
+          }
+        ).catch(() => {});
       }
       if (shouldRender) render();
     }
 
-    function completeReview(patch) {
+    async function completeReview(patch) {
       const completedAsset = assets.find((asset) => asset.file === state.selected);
-      updateRecord(patch, true, false, false);
+      updateRecord(patch, false, false, false);
+      const actionMessage = patch.status === "approved" ? "审核通过" : "修改意见已提交";
+      try {
+        await runWithFeedback(
+          () => persistRecord(completedAsset.file),
+          {
+            loadingTitle: patch.status === "approved" ? "正在提交审核通过" : "正在提交修改意见",
+            loadingMessage: "系统正在同步到飞书数据库，请稍候。",
+            successTitle: actionMessage,
+            successMessage: "审核记录已同步，系统将自动进入下一个素材。",
+            errorTitle: "审核同步失败",
+            autoClose: 1400
+          }
+        );
+      } catch {
+        render();
+        return;
+      }
       state.lastCompleted = completedAsset ? {
         title: completedAsset.title,
         file: completedAsset.file,
@@ -2647,7 +2819,6 @@
         comment: state.records[completedAsset.file].comment
       } : null;
       const next = getNextAsset();
-      const actionMessage = patch.status === "approved" ? "审核通过" : "修改意见已提交";
       if (next) {
         state.selected = next.file;
         state.drawerOpen = true;
@@ -2803,6 +2974,9 @@
     $("drawerBackdrop").addEventListener("click", () => closeDrawer(true));
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && state.drawerOpen) closeDrawer(true);
+      if (event.key === "Escape" && $("actionModal").classList.contains("show") && !$("actionModal").classList.contains("loading")) {
+        hideActionModal();
+      }
     });
 
     document.querySelectorAll(".nav button").forEach((button) => {
@@ -2827,6 +3001,11 @@
     });
 
     $("exportData").addEventListener("click", () => {
+      showActionModal({
+        type: "loading",
+        title: "正在导出审核数据",
+        message: "系统正在生成 JSON 文件，请稍候。"
+      });
       const payload = {
         project: "Navos Creative Hub",
         exportedAt: new Date().toISOString(),
@@ -2840,51 +3019,90 @@
       link.download = "navos-creative-hub-review-data.json";
       link.click();
       URL.revokeObjectURL(url);
+      showActionModal({
+        type: "success",
+        title: "审核数据已导出",
+        message: "JSON 文件已生成，可以用于后续备份或迁移。",
+        autoClose: 1400
+      });
       showToast("审核数据已导出");
     });
 
     $("importData").addEventListener("change", async (event) => {
       const file = event.target.files[0];
       if (!file) return;
-      const data = JSON.parse(await file.text());
-      const imported = {};
-      (data.assets || []).forEach((item) => {
-        if (item.file && item.review) imported[item.file] = item.review;
-      });
-      state.records = { ...state.records, ...imported };
-      save("导入数据已合并");
-      render();
-      event.target.value = "";
+      try {
+        await runWithFeedback(
+          async () => {
+            const data = JSON.parse(await file.text());
+            const imported = {};
+            (data.assets || []).forEach((item) => {
+              if (item.file && item.review) imported[item.file] = item.review;
+            });
+            state.records = { ...state.records, ...imported };
+            save("");
+            render();
+            return imported;
+          },
+          {
+            loadingTitle: "正在导入数据",
+            loadingMessage: "系统正在解析文件并合并审核记录。",
+            successTitle: "导入数据已合并",
+            successMessage: "本地审核记录已更新。",
+            errorTitle: "导入失败",
+            autoClose: 1400
+          }
+        );
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        event.target.value = "";
+      }
     });
 
     $("requestForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       const product = products.find((item) => item.id === $("requestProduct").value);
       const attachments = [...$("requestAttachments").files].map((file) => `${file.name} (${Math.round(file.size / 1024)} KB)`);
+      const submitButton = $("requestForm").querySelector("button[type='submit']");
+      submitButton.disabled = true;
       try {
-        const response = await apiFetch("/api/requests", {
-          method: "POST",
-          body: JSON.stringify({
-            productId: product?.id || "",
-            productName: product?.name || "",
-            direction: $("requestDirection").value,
-            demo: $("requestDemo").value,
-            quantity: $("requestQuantity").value,
-            dueAt: $("requestDueAt").value,
-            note: $("requestNote").value,
-            attachments
-          })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "提交失败");
+        const data = await runWithFeedback(
+          async () => {
+            const response = await apiFetch("/api/requests", {
+              method: "POST",
+              body: JSON.stringify({
+                productId: product?.id || "",
+                productName: product?.name || "",
+                direction: $("requestDirection").value,
+                demo: $("requestDemo").value,
+                quantity: $("requestQuantity").value,
+                dueAt: $("requestDueAt").value,
+                note: $("requestNote").value,
+                attachments
+              })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "提交失败");
+            return result;
+          },
+          {
+            loadingTitle: "正在提交需求",
+            loadingMessage: "已收到你的提交动作，系统正在写入飞书需求库，请不要重复点击。",
+            successTitle: "需求提交成功",
+            successMessage: (data) => `需求 ${data.requestId || data.recordId} 已提交到飞书，制作团队可以开始排期。`,
+            errorTitle: "需求提交失败",
+            autoClose: 0
+          }
+        );
         $("requestForm").reset();
         renderRequestForm();
         $("requestSuccessText").textContent = `需求 ${data.requestId || data.recordId} 已提交到飞书，制作团队可以开始排期。`;
-        $("requestSuccessModal").classList.add("show");
-        $("requestSuccessModal").setAttribute("aria-hidden", "false");
         showToast("需求提交成功，已写入飞书");
       } catch (error) {
         showToast(error.message);
+      } finally {
+        submitButton.disabled = false;
       }
     });
 
@@ -2907,6 +3125,8 @@
         showToast("已关闭提交结果");
       });
 
+    $("actionClose").addEventListener("click", hideActionModal);
+
     document.querySelectorAll("[data-auth-mode]").forEach((button) => {
       button.addEventListener("click", () => {
         state.authMode = button.dataset.authMode;
@@ -2923,21 +3143,35 @@
       event.preventDefault();
       $("authError").textContent = "";
       $("authSubmit").disabled = true;
+      const isLogin = state.authMode === "login";
       try {
-        const response = await fetch(`${API_BASE}/api/auth/${state.authMode === "login" ? "login" : "register"}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: $("authEmail").value,
-            password: $("authPassword").value
-          })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "登录失败");
+        const data = await runWithFeedback(
+          async () => {
+            const response = await fetch(`${API_BASE}/api/auth/${isLogin ? "login" : "register"}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: $("authEmail").value,
+                password: $("authPassword").value
+              })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "登录失败");
+            return result;
+          },
+          {
+            loadingTitle: isLogin ? "正在登录" : "正在注册账号",
+            loadingMessage: "系统正在验证账号并连接飞书数据库，请稍候。",
+            successTitle: isLogin ? "登录成功" : "注册成功",
+            successMessage: isLogin ? "欢迎回来，正在进入工作台。" : "账号已创建，正在进入工作台。",
+            errorTitle: isLogin ? "登录失败" : "注册失败",
+            autoClose: 1200
+          }
+        );
         setAuthenticated(data.user, data.token);
         await loadBackendData({ silent: true });
         render();
-        showToast(state.authMode === "login" ? "登录成功，欢迎回来" : "注册成功，已进入系统");
+        showToast(isLogin ? "登录成功，欢迎回来" : "注册成功，已进入系统");
       } catch (error) {
         $("authError").textContent = error.message;
         showToast(error.message);
@@ -2947,11 +3181,26 @@
     });
 
     async function logout() {
-      if (state.authToken) {
-        await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      try {
+        await runWithFeedback(
+          async () => {
+            if (state.authToken) {
+              await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+            }
+          },
+          {
+            loadingTitle: "正在退出登录",
+            loadingMessage: "系统正在结束当前会话。",
+            successTitle: "已退出登录",
+            successMessage: "你可以重新登录或关闭页面。",
+            errorTitle: "退出失败",
+            autoClose: 1000
+          }
+        );
+      } finally {
+        setLoggedOut();
+        showToast("已退出登录");
       }
-      setLoggedOut();
-      showToast("已退出登录");
     }
 
     $("logoutBtn").addEventListener("click", logout);
