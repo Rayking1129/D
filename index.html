@@ -1152,8 +1152,18 @@
 
     .pill.pass { background: #e4f6e9; color: var(--green); }
     .pill.revise { background: #fff3df; color: var(--amber); }
-    .pill.pending { background: #ececf1; color: #5f6671; }
+    .pill.pending { background: #fff6dd; color: #9a5a00; }
     .pill.published { background: #e5f1ff; color: var(--blue); }
+
+    .pill.pending::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #ffb000;
+      margin-right: 6px;
+      box-shadow: 0 0 0 3px rgba(255, 176, 0, .16);
+    }
 
     .tags {
       display: flex;
@@ -2391,6 +2401,11 @@
       return `${date.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })} ${date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`;
     }
 
+    function dateValue(value) {
+      const date = new Date(Number(value) || value);
+      return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    }
+
     function statusLabel(status) {
       return { pending: "待审核", approved: "审核通过", revision: "建议修改" }[status] || "待审核";
     }
@@ -2416,6 +2431,12 @@
         const matchQuery = !q || searchable.includes(q);
         const matchProduct = state.productFilter === "all" || record.productId === state.productFilter;
         return matchQuery && matchProduct;
+      }).sort((a, b) => {
+        const recordA = state.records[a.file] || {};
+        const recordB = state.records[b.file] || {};
+        const timeA = dateValue(a.updatedAt || recordA.updatedAt || a.createdAt || recordA.createdAt);
+        const timeB = dateValue(b.updatedAt || recordB.updatedAt || b.createdAt || recordB.createdAt);
+        return timeB - timeA;
       });
     }
 
@@ -2608,7 +2629,6 @@
                 ${record.published ? `<span class="pill published">已发布</span>` : ""}
               </div>
               <div class="tags">${record.tags.map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join("")}</div>
-              ${record.comment ? `<div class="comment-preview">修改意见：${escapeHtml(record.comment)}</div>` : ""}
               <div class="card-actions">
                 <button class="btn secondary" data-action="open-asset" data-file="${asset.file}">详情</button>
                 <a class="btn" href="${assetSrc(asset)}" download>下载</a>
@@ -2650,17 +2670,10 @@
       const latestVersionLabel = asset.version || record.version || "V1";
       const latestCreatedAt = asset.createdAt || record.createdAt;
       const isApproved = record.status === "approved";
-      const savedNotice = state.lastCompleted ? `
-        <div class="review-saved">
-          <strong>上一条已保存：${escapeHtml(state.lastCompleted.title)} · ${statusLabel(state.lastCompleted.status)}</strong>
-          ${state.lastCompleted.comment ? `修改意见：${escapeHtml(state.lastCompleted.comment)}` : "已记录审核结果，并自动进入下一条素材。"}
-        </div>
-      ` : "";
       $("drawerTitle").textContent = asset.title;
       $("drawerSubtitle").textContent = `${product.name} · 素材ID ${asset.assetId || asset.file} · 当前 ${latestVersionLabel}`;
       $("drawerBody").innerHTML = `
         <div class="drawer-video">
-          ${savedNotice}
           <div class="phone-frame">
             <div class="phone-screen">
               ${mediaElement(assetSrc(asset), "", "controls autoplay preload=\"metadata\" playsinline")}
