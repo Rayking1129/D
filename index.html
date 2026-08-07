@@ -1748,9 +1748,9 @@
       return tags.length ? tags : ["可投放"];
     }
 
-    function save() {
+    function save(message = "已保存") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
-      showToast("已保存");
+      if (message) showToast(message);
     }
 
     async function apiFetch(path, options = {}) {
@@ -1785,6 +1785,7 @@
       const response = await apiFetch("/api/auth/me");
       if (!response.ok) {
         setLoggedOut();
+        showToast("登录已过期，请重新登录");
         return false;
       }
       const data = await response.json();
@@ -1792,7 +1793,7 @@
       return true;
     }
 
-    async function loadBackendData() {
+    async function loadBackendData({ silent = false } = {}) {
       try {
         const response = await apiFetch("/api/bootstrap");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1811,10 +1812,10 @@
         state.selected = assets[0]?.file || "";
         state.backendOnline = true;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
-        showToast("已连接飞书数据库");
+        if (!silent) showToast("已连接飞书数据库");
       } catch (error) {
         state.backendOnline = false;
-        showToast("未连接后端，使用本地缓存");
+        if (!silent) showToast("未连接后端，使用本地缓存");
       }
     }
 
@@ -1843,7 +1844,7 @@
       toast.textContent = message;
       toast.classList.add("show");
       clearTimeout(showToast.timer);
-      showToast.timer = setTimeout(() => toast.classList.remove("show"), 1500);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 2200);
     }
 
     function formatSize(bytes) {
@@ -2201,10 +2202,10 @@
       `;
 
       $("assetStatus").addEventListener("change", (event) => updateRecord({ status: event.target.value }));
-      $("assetTags").addEventListener("change", (event) => updateRecord({ tags: normalizeTags(event.target.value) }));
+      $("assetTags").addEventListener("change", (event) => updateRecord({ tags: normalizeTags(event.target.value) }, true, true, "标签已保存"));
       $("assetComment").addEventListener("input", (event) => updateRecord({ comment: event.target.value }, false, false));
       $("assetComment").addEventListener("blur", () => {
-        save();
+        save("修改意见已保存");
         persistRecord(state.selected).catch(() => showToast("飞书同步失败"));
         render();
       });
@@ -2221,7 +2222,21 @@
       });
     }
 
-    function updateRecord(patch, shouldSave = true, shouldRender = true) {
+    function recordFeedback(patch) {
+      if ("published" in patch) return patch.published ? "已标记为已发布" : "已取消发布标记";
+      if ("status" in patch) {
+        return {
+          pending: "已恢复为待审核",
+          approved: "审核状态已改为通过",
+          revision: "已标记为建议修改，请填写修改意见"
+        }[patch.status] || "审核状态已更新";
+      }
+      if ("tags" in patch) return "标签已保存";
+      if ("comment" in patch) return "修改意见已保存";
+      return "已保存";
+    }
+
+    function updateRecord(patch, shouldSave = true, shouldRender = true, message) {
       const file = state.selected;
       const current = state.records[state.selected];
       state.records[state.selected] = {
@@ -2233,7 +2248,7 @@
         showToast("请补充修改意见");
       }
       if (shouldSave) {
-        save();
+        save(message === false ? "" : (message || recordFeedback(patch)));
         persistRecord(file).catch(() => showToast("飞书同步失败"));
       }
       if (shouldRender) render();
@@ -2241,7 +2256,7 @@
 
     function completeReview(patch) {
       const completedAsset = assets.find((asset) => asset.file === state.selected);
-      updateRecord(patch, true, false);
+      updateRecord(patch, true, false, false);
       state.lastCompleted = completedAsset ? {
         title: completedAsset.title,
         file: completedAsset.file,
@@ -2249,13 +2264,14 @@
         comment: state.records[completedAsset.file].comment
       } : null;
       const next = getNextAsset();
+      const actionMessage = patch.status === "approved" ? "审核通过" : "修改意见已提交";
       if (next) {
         state.selected = next.file;
         state.drawerOpen = true;
-        showToast("已保存，进入下一个素材");
+        showToast(`${actionMessage}，已进入下一个素材`);
       } else {
         state.drawerOpen = false;
-        showToast("已完成当前列表审核");
+        showToast(`${actionMessage}，当前列表已完成`);
       }
       render();
     }
@@ -2273,10 +2289,11 @@
       render();
     }
 
-    function closeDrawer() {
+    function closeDrawer(withFeedback = false) {
       state.drawerOpen = false;
       state.lastCompleted = null;
       render();
+      if (withFeedback) showToast("已关闭素材详情");
     }
 
     function normalizeTags(value) {
@@ -2343,6 +2360,7 @@
         state.productGalleryIndex = 0;
         state.view = "productDetail";
         render();
+        showToast("已打开商品详情");
         return;
       }
 
@@ -2352,6 +2370,7 @@
         state.selectedProductId = "";
         state.productGalleryIndex = 0;
         render();
+        showToast("已返回商品库");
         return;
       }
 
@@ -2359,6 +2378,7 @@
       if (galleryTarget) {
         state.productGalleryIndex = Number(galleryTarget.dataset.index || 0);
         render();
+        showToast("商品图已切换");
         return;
       }
 
@@ -2367,26 +2387,31 @@
         state.productFilter = viewProductAssets.dataset.product || "all";
         state.view = "grid";
         render();
+        showToast("已筛选该商品的关联素材");
         return;
       }
 
       const assetTarget = event.target.closest("[data-action='open-asset']");
       if (assetTarget && !event.target.closest("a, video, img")) {
         const file = assetTarget.dataset.file;
-        if (file) openDrawer(file);
+        if (file) {
+          openDrawer(file);
+          showToast("已打开素材审核详情");
+        }
       }
     });
 
-    $("closeDrawer").addEventListener("click", closeDrawer);
-    $("drawerBackdrop").addEventListener("click", closeDrawer);
+    $("closeDrawer").addEventListener("click", () => closeDrawer(true));
+    $("drawerBackdrop").addEventListener("click", () => closeDrawer(true));
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && state.drawerOpen) closeDrawer();
+      if (event.key === "Escape" && state.drawerOpen) closeDrawer(true);
     });
 
     document.querySelectorAll(".nav button").forEach((button) => {
       button.addEventListener("click", () => {
         state.view = button.dataset.view;
         render();
+        showToast(`已切换到${button.textContent.trim()}`);
       });
     });
 
@@ -2400,6 +2425,7 @@
       state.productFilter = "all";
       $("search").value = "";
       render();
+      showToast("筛选条件已清空");
     });
 
     $("exportData").addEventListener("click", () => {
@@ -2416,6 +2442,7 @@
       link.download = "navos-creative-hub-review-data.json";
       link.click();
       URL.revokeObjectURL(url);
+      showToast("审核数据已导出");
     });
 
     $("importData").addEventListener("change", async (event) => {
@@ -2427,7 +2454,7 @@
         if (item.file && item.review) imported[item.file] = item.review;
       });
       state.records = { ...state.records, ...imported };
-      save();
+      save("导入数据已合并");
       render();
       event.target.value = "";
     });
@@ -2457,17 +2484,22 @@
         $("requestSuccessText").textContent = `需求 ${data.requestId || data.recordId} 已提交到飞书，制作团队可以开始排期。`;
         $("requestSuccessModal").classList.add("show");
         $("requestSuccessModal").setAttribute("aria-hidden", "false");
+        showToast("需求提交成功，已写入飞书");
       } catch (error) {
         showToast(error.message);
       }
     });
 
-    $("requestProduct").addEventListener("change", renderRequestProductPreview);
+    $("requestProduct").addEventListener("change", () => {
+      renderRequestProductPreview();
+      showToast("关联商品已更新");
+    });
 
     $("closeSuccessModal").addEventListener("click", () => {
-      $("requestSuccessModal").classList.remove("show");
-      $("requestSuccessModal").setAttribute("aria-hidden", "true");
-    });
+        $("requestSuccessModal").classList.remove("show");
+        $("requestSuccessModal").setAttribute("aria-hidden", "true");
+        showToast("已关闭提交结果");
+      });
 
     document.querySelectorAll("[data-auth-mode]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -2477,6 +2509,7 @@
         $("authHelp").textContent = state.authMode === "login" ? "Use your work email to enter the creative asset hub." : "Create an internal reviewer account. Passwords are stored as salted hashes.";
         $("authSubmit").textContent = state.authMode === "login" ? "Enter Hub" : "Create Account";
         $("authError").textContent = "";
+        showToast(state.authMode === "login" ? "已切换到登录" : "已切换到注册");
       });
     });
 
@@ -2496,10 +2529,12 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "登录失败");
         setAuthenticated(data.user, data.token);
-        await loadBackendData();
+        await loadBackendData({ silent: true });
         render();
+        showToast(state.authMode === "login" ? "登录成功，欢迎回来" : "注册成功，已进入系统");
       } catch (error) {
         $("authError").textContent = error.message;
+        showToast(error.message);
       } finally {
         $("authSubmit").disabled = false;
       }
@@ -2510,6 +2545,7 @@
         await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
       }
       setLoggedOut();
+      showToast("已退出登录");
     }
 
     $("logoutBtn").addEventListener("click", logout);
@@ -2518,8 +2554,9 @@
     async function init() {
       const ok = await checkAuth();
       if (!ok) return;
-      await loadBackendData();
+      await loadBackendData({ silent: true });
       render();
+      showToast("已保持登录状态");
     }
 
     init();
