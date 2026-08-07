@@ -1327,6 +1327,17 @@
       font-size: 14px;
     }
 
+    .approved-lock {
+      padding: 13px 14px;
+      border-radius: 8px;
+      background: #eef8f0;
+      border: 1px solid rgba(36, 138, 61, .18);
+      color: #17612d;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
     .latest-summary {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2637,7 +2648,8 @@
       const product = getAssetProduct(asset);
       const versions = getAssetVersions(asset);
       const latestVersionLabel = asset.version || record.version || "V1";
-      const latestAuditTime = record.reviewedAt || asset.reviewedAt || asset.updatedAt || record.updatedAt;
+      const latestCreatedAt = asset.createdAt || record.createdAt;
+      const isApproved = record.status === "approved";
       const savedNotice = state.lastCompleted ? `
         <div class="review-saved">
           <strong>上一条已保存：${escapeHtml(state.lastCompleted.title)} · ${statusLabel(state.lastCompleted.status)}</strong>
@@ -2661,41 +2673,34 @@
             <div><span>素材ID</span><strong>${escapeHtml(asset.assetId || asset.file)}</strong></div>
             <div><span>最新版本</span><strong>${escapeHtml(latestVersionLabel)}</strong></div>
             <div><span>当前审核人</span><strong>${escapeHtml(record.reviewer || "待分配")}</strong></div>
-            <div><span>审核时间</span><strong>${formatDate(latestAuditTime)}</strong></div>
+            <div><span>创建时间</span><strong>${formatDate(latestCreatedAt)}</strong></div>
           </div>
           <div class="drawer-meta">
             <span class="pill">${escapeHtml(asset.scene)}</span>
             <span class="pill">${formatSize(asset.size)}</span>
             <span class="pill">${escapeHtml(latestVersionLabel)}</span>
-            <span class="pill ${statusClass(record.status)}">${statusLabel(record.status)}</span>
             <span class="pill">创建 ${formatDate(asset.createdAt || record.createdAt)}</span>
             <span class="pill">更新 ${formatDate(asset.updatedAt || record.updatedAt)}</span>
             ${record.published ? `<span class="pill published">已发布</span>` : ""}
           </div>
-          <label>
-            审核状态
-            <select id="assetStatus">
-              <option value="pending" ${record.status === "pending" ? "selected" : ""}>待审核</option>
-              <option value="approved" ${record.status === "approved" ? "selected" : ""}>审核通过</option>
-              <option value="revision" ${record.status === "revision" ? "selected" : ""}>建议修改</option>
-            </select>
-          </label>
-          <label>
-            素材标签
-            <input id="assetTags" value="${escapeAttr(record.tags.join(", "))}" placeholder="用逗号分隔，如 街头, 可投放" />
-          </label>
-          <label>
-            修改意见
-            <textarea id="assetComment" placeholder="选择“建议修改”时请填写具体修改意见，便于制作团队返修。">${escapeHtml(record.comment)}</textarea>
-          </label>
+          ${isApproved ? `
+            <div class="approved-lock">该素材已审核通过，审批结果已锁定。当前仅支持维护发布状态。</div>
+          ` : `
+            <label>
+              修改意见
+              <textarea id="assetComment" placeholder="如需返修，请填写具体修改意见，便于制作团队处理。">${escapeHtml(record.comment)}</textarea>
+            </label>
+          `}
           <label class="toggle-row">
-            <span>发布状态</span>
+            <span>发布状态：${record.published ? "已发布" : "未发布"}</span>
             <input id="assetPublished" type="checkbox" ${record.published ? "checked" : ""} />
           </label>
-          <div class="drawer-actions">
-            <button class="btn good" id="quickApprove">审核通过并下一个</button>
-            <button class="btn warn" id="quickRevision">提交修改意见并下一个</button>
-          </div>
+          ${isApproved ? "" : `
+            <div class="drawer-actions">
+              <button class="btn good" id="quickApprove">审核通过并下一个</button>
+              <button class="btn warn" id="quickRevision">提交修改意见并下一个</button>
+            </div>
+          `}
           <a class="btn secondary" href="${assetSrc(asset)}" download>下载当前素材</a>
         </div>
         <section class="version-ledger">
@@ -2742,35 +2747,35 @@
         </section>
       `;
 
-      $("assetStatus").addEventListener("change", (event) => updateRecord({ status: event.target.value }));
-      $("assetTags").addEventListener("change", (event) => updateRecord({ tags: normalizeTags(event.target.value) }, true, true, "标签已保存"));
-      $("assetComment").addEventListener("input", (event) => updateRecord({ comment: event.target.value }, false, false));
-      $("assetComment").addEventListener("blur", () => {
-        save("");
-        runWithFeedback(
-          () => persistRecord(state.selected),
-          {
-            loadingTitle: "正在保存修改意见",
-            loadingMessage: "系统正在同步到飞书数据库，请稍候。",
-            successTitle: "修改意见已保存",
-            successMessage: "制作团队可以在素材详情中查看这条反馈。",
-            errorTitle: "修改意见保存失败",
-            autoClose: 1200
-          }
-        ).catch(() => {});
-        render();
-      });
       $("assetPublished").addEventListener("change", (event) => updateRecord({ published: event.target.checked }));
-      $("quickApprove").addEventListener("click", () => completeReview({ status: "approved" }));
-      $("quickRevision").addEventListener("click", () => {
-        const comment = $("assetComment").value.trim();
-        if (!comment) {
-          showToast("请先填写修改意见");
-          $("assetComment").focus();
-          return;
-        }
-        completeReview({ status: "revision", comment });
-      });
+      if (!isApproved) {
+        $("assetComment").addEventListener("input", (event) => updateRecord({ comment: event.target.value }, false, false));
+        $("assetComment").addEventListener("blur", () => {
+          save("");
+          runWithFeedback(
+            () => persistRecord(state.selected),
+            {
+              loadingTitle: "正在保存修改意见",
+              loadingMessage: "系统正在同步到飞书数据库，请稍候。",
+              successTitle: "修改意见已保存",
+              successMessage: "制作团队可以在素材详情中查看这条反馈。",
+              errorTitle: "修改意见保存失败",
+              autoClose: 1200
+            }
+          ).catch(() => {});
+          render();
+        });
+        $("quickApprove").addEventListener("click", () => completeReview({ status: "approved" }));
+        $("quickRevision").addEventListener("click", () => {
+          const comment = $("assetComment").value.trim();
+          if (!comment) {
+            showToast("请先填写修改意见");
+            $("assetComment").focus();
+            return;
+          }
+          completeReview({ status: "revision", comment });
+        });
+      }
     }
 
     function recordFeedback(patch) {
