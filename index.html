@@ -85,6 +85,15 @@
       font-weight: 900;
       border-radius: 8px;
       box-shadow: 0 10px 24px rgba(0, 0, 0, .16);
+      overflow: hidden;
+    }
+
+    .brand-mark img,
+    .login-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     .brand h1 {
@@ -1692,6 +1701,7 @@
       border: 1px solid rgba(255,255,255,.24);
       font-weight: 900;
       backdrop-filter: blur(18px);
+      overflow: hidden;
     }
 
     .login-copy h2 {
@@ -1879,7 +1889,7 @@
 <body>
   <section class="login-shell" id="loginShell">
     <div class="login-visual">
-      <div class="login-logo">NK</div>
+      <div class="login-logo"><img src="assets/navos-logo.jpg" alt="Navos" /></div>
       <div class="login-copy">
         <h2>Creative control for high-velocity drops.</h2>
         <p>Review AI video assets, route revision notes, and keep every product launch moving from one cinematic command center.</p>
@@ -1912,7 +1922,7 @@
   <div class="app auth-locked" id="appRoot">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">NK</div>
+        <div class="brand-mark"><img src="assets/navos-logo.jpg" alt="Navos" /></div>
         <div>
           <h1>Navos<br />Creative Hub</h1>
           <p>AI 内容创意素材管理</p>
@@ -2135,6 +2145,8 @@
       productGalleryIndex: 0,
     };
 
+    let backendRefreshTimer = null;
+
     const $ = (id) => document.getElementById(id);
 
     function loadRecords() {
@@ -2194,11 +2206,13 @@
       renderUserProfile();
       $("loginShell").classList.add("hidden");
       $("appRoot").classList.remove("auth-locked");
+      startBackendAutoRefresh();
     }
 
     function setLoggedOut() {
       state.currentUser = null;
       state.authToken = "";
+      stopBackendAutoRefresh();
       localStorage.removeItem("creative-hub-token");
       $("loginShell").classList.remove("hidden");
       $("appRoot").classList.add("auth-locked");
@@ -2227,8 +2241,37 @@
       return true;
     }
 
-    async function loadBackendData({ silent = false } = {}) {
+    function shouldSkipSilentRefresh() {
+      const active = document.activeElement;
+      const isEditing = active?.matches?.("input, textarea, select, button");
+      return state.drawerOpen || state.view === "requests" || Boolean(isEditing);
+    }
+
+    async function refreshBackendData({ force = false } = {}) {
+      if (!state.authToken) return;
+      if (!force && shouldSkipSilentRefresh()) return;
+      await loadBackendData({ silent: true, preserveSelection: true });
+      render();
+    }
+
+    function startBackendAutoRefresh() {
+      stopBackendAutoRefresh();
+      backendRefreshTimer = window.setInterval(() => {
+        if (document.hidden) return;
+        refreshBackendData().catch(() => {});
+      }, 30000);
+    }
+
+    function stopBackendAutoRefresh() {
+      if (!backendRefreshTimer) return;
+      window.clearInterval(backendRefreshTimer);
+      backendRefreshTimer = null;
+    }
+
+    async function loadBackendData({ silent = false, preserveSelection = false } = {}) {
       try {
+        const previousSelected = state.selected;
+        const previousProductId = state.selectedProductId;
         const response = await apiFetch("/api/bootstrap");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
@@ -2245,7 +2288,12 @@
           reviewer: "",
           reviewedAt: ""
         }]));
-        state.selected = assets[0]?.file || "";
+        state.selected = preserveSelection && assets.some((asset) => asset.file === previousSelected)
+          ? previousSelected
+          : assets[0]?.file || "";
+        state.selectedProductId = preserveSelection && products.some((product) => product.id === previousProductId)
+          ? previousProductId
+          : previousProductId;
         state.backendOnline = true;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
         if (!silent) showToast("已连接飞书数据库");
@@ -2961,6 +3009,9 @@
         state.productGalleryIndex = 0;
         state.view = "productDetail";
         render();
+        if (state.view !== "requests") {
+          refreshBackendData({ force: true }).catch(() => {});
+        }
         showToast("已打开商品详情");
         return;
       }
@@ -3030,6 +3081,9 @@
       button.addEventListener("click", () => {
         state.view = button.dataset.view;
         render();
+        if (state.view !== "requests") {
+          refreshBackendData({ force: true }).catch(() => {});
+        }
         showToast(`已切换到${button.textContent.trim()}`);
       });
     });
@@ -3187,6 +3241,12 @@
     }
 
     $("sideLogoutBtn").addEventListener("click", logout);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        refreshBackendData({ force: true }).catch(() => {});
+      }
+    });
 
     async function init() {
       const ok = await checkAuth();
