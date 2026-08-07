@@ -1152,17 +1152,26 @@
     }
 
     .pill.pass { background: #e4f6e9; color: var(--green); }
-    .pill.revise { background: #fff3df; color: var(--amber); }
+    .pill.revise { background: #fff0f1; color: var(--red); }
     .pill.pending { background: #fff6dd; color: #9a5a00; }
     .pill.published { background: #e5f1ff; color: var(--blue); }
 
+    .pill.revise::before,
     .pill.pending::before {
       content: "";
       width: 7px;
       height: 7px;
       border-radius: 999px;
-      background: #ffb000;
       margin-right: 6px;
+    }
+
+    .pill.revise::before {
+      background: var(--red);
+      box-shadow: 0 0 0 3px rgba(215, 0, 21, .12);
+    }
+
+    .pill.pending::before {
+      background: #ffb000;
       box-shadow: 0 0 0 3px rgba(255, 176, 0, .16);
     }
 
@@ -2834,26 +2843,11 @@
       if (shouldRender) render();
     }
 
-    async function completeReview(patch) {
+    function completeReview(patch) {
       const completedAsset = assets.find((asset) => asset.file === state.selected);
       updateRecord(patch, false, false, false);
+      save("");
       const actionMessage = patch.status === "approved" ? "审核通过" : "修改意见已提交";
-      try {
-        await runWithFeedback(
-          () => persistRecord(completedAsset.file),
-          {
-            loadingTitle: patch.status === "approved" ? "正在提交审核通过" : "正在提交修改意见",
-            loadingMessage: "系统正在同步到飞书数据库，请稍候。",
-            successTitle: actionMessage,
-            successMessage: "审核记录已同步，系统将自动进入下一个素材。",
-            errorTitle: "审核同步失败",
-            autoClose: 1400
-          }
-        );
-      } catch {
-        render();
-        return;
-      }
       state.lastCompleted = completedAsset ? {
         title: completedAsset.title,
         file: completedAsset.file,
@@ -2864,12 +2858,23 @@
       if (next) {
         state.selected = next.file;
         state.drawerOpen = true;
-        showToast(`${actionMessage}，已进入下一个素材`);
+        showToast(`${actionMessage}，已进入下一个素材，后台同步中`);
       } else {
         state.drawerOpen = false;
-        showToast(`${actionMessage}，当前列表已完成`);
+        showToast(`${actionMessage}，当前列表已完成，后台同步中`);
       }
       render();
+      if (completedAsset?.file) {
+        persistRecord(completedAsset.file)
+          .then(() => showToast(`${actionMessage}已同步`))
+          .catch((error) => {
+            showActionModal({
+              type: "error",
+              title: "审批同步失败",
+              message: error.message || "本地已记录，但飞书同步失败，请稍后重试。"
+            });
+          });
+      }
     }
 
     function getNextAsset() {
