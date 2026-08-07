@@ -389,24 +389,61 @@
     .request-form {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      padding: 24px;
+      gap: 18px;
+      padding: 26px;
       background: rgba(255,255,255,.9);
       border: 1px solid rgba(255,255,255,.94);
       border-radius: 8px;
       box-shadow: 0 22px 58px rgba(0,0,0,.08);
     }
 
+    .request-form label {
+      gap: 8px;
+    }
+
+    .label-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      color: #2f2f34;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
     .request-form input,
     .request-form select,
     .request-form textarea {
       width: 100%;
-      min-height: 46px;
-      border: 1px solid rgba(0,0,0,.1);
+      min-height: 50px;
+      border: 1px solid rgba(0,0,0,.08);
       border-radius: 8px;
-      background: #fff;
-      padding: 10px 12px;
+      background: linear-gradient(180deg, #fff, #fbfbfd);
+      padding: 12px 14px;
       outline: none;
+      color: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 24px rgba(0,0,0,.04);
+      transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .request-form select,
+    .review-form select,
+    .field select {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 42px;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #7b7b82 50%),
+        linear-gradient(135deg, #7b7b82 50%, transparent 50%),
+        linear-gradient(180deg, #fff, #fbfbfd);
+      background-position:
+        calc(100% - 22px) 21px,
+        calc(100% - 16px) 21px,
+        0 0;
+      background-size:
+        6px 6px,
+        6px 6px,
+        100% 100%;
+      background-repeat: no-repeat;
     }
 
     .request-form input:focus,
@@ -429,49 +466,155 @@
     .required-mark {
       color: var(--red);
       font-weight: 900;
+      font-size: 15px;
+      line-height: 1;
     }
 
     .optional-mark {
-      color: var(--muted);
-      font-weight: 650;
+      display: none;
     }
 
-    .product-preview {
+    .native-product-select {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+    }
+
+    .product-combobox {
+      position: relative;
       grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: 110px minmax(0, 1fr);
-      gap: 14px;
-      align-items: center;
-      padding: 14px;
-      border-radius: 8px;
-      background: #f5f5f7;
-      border: 1px solid rgba(0,0,0,.06);
     }
 
-    .product-preview-media {
-      width: 110px;
+    .product-combo-button {
+      width: 100%;
+      min-height: 74px;
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr) 28px;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fff, #f7f7fa);
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 16px 38px rgba(0,0,0,.06);
+      color: var(--ink);
+      text-align: left;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .product-combo-button:hover,
+    .product-combobox.open .product-combo-button {
+      border-color: rgba(0,113,227,.34);
+      box-shadow: 0 0 0 4px rgba(0,113,227,.10), 0 18px 44px rgba(0,0,0,.08);
+    }
+
+    .product-combo-media {
+      width: 54px;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #111;
+      box-shadow: 0 8px 18px rgba(0,0,0,.14);
+    }
+
+    .product-combo-media .media-visual,
+    .product-option-media .media-visual {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .product-combo-copy {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .product-combo-copy strong,
+    .product-option-copy strong {
+      font-size: 15px;
+      overflow-wrap: anywhere;
+    }
+
+    .product-combo-copy span,
+    .product-option-copy span {
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .combo-chevron {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: #f0f0f3;
+      display: grid;
+      place-items: center;
+      color: #5f5f66;
+      font-size: 15px;
+      transition: transform .18s ease;
+    }
+
+    .product-combobox.open .combo-chevron {
+      transform: rotate(180deg);
+    }
+
+    .product-options {
+      position: absolute;
+      z-index: 12;
+      left: 0;
+      right: 0;
+      top: calc(100% + 8px);
+      display: none;
+      max-height: 320px;
+      overflow: auto;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: 0 26px 70px rgba(0,0,0,.16);
+      backdrop-filter: blur(18px) saturate(180%);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
+    }
+
+    .product-combobox.open .product-options {
+      display: grid;
+      gap: 6px;
+    }
+
+    .product-option {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr) auto;
+      gap: 11px;
+      align-items: center;
+      padding: 9px;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      text-align: left;
+      transition: background .16s ease;
+    }
+
+    .product-option:hover,
+    .product-option.active {
+      background: #f3f7ff;
+    }
+
+    .product-option-media {
+      width: 46px;
       aspect-ratio: 1;
       border-radius: 8px;
       overflow: hidden;
       background: #111;
     }
 
-    .product-preview-media video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .product-preview h4 {
-      margin: 0 0 6px;
-      font-size: 18px;
-      letter-spacing: -.01em;
-    }
-
-    .product-preview p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.45;
+    .product-option-check {
+      color: var(--blue);
+      font-weight: 900;
       font-size: 13px;
     }
 
@@ -1691,13 +1834,14 @@
               </div>
             </section>
             <form class="request-form" id="requestForm">
-              <label>
-                关联商品 <span class="required-mark">必填</span>
-                <select id="requestProduct" required></select>
+              <label class="product-combobox" id="requestProductCombo">
+                <span class="label-row">关联商品 <span class="required-mark">*</span></span>
+                <select class="native-product-select" id="requestProduct" required tabindex="-1"></select>
+                <button class="product-combo-button" id="requestProductButton" type="button" aria-haspopup="listbox" aria-expanded="false"></button>
+                <div class="product-options" id="requestProductOptions" role="listbox"></div>
               </label>
-              <div class="product-preview" id="requestProductPreview"></div>
               <label>
-                创意类型 <span class="optional-mark">选填</span>
+                <span class="label-row">创意类型</span>
                 <select id="requestDirection">
                   <option>无强要求</option>
                   <option>产品故事 Product Story</option>
@@ -1709,23 +1853,23 @@
                 </select>
               </label>
               <label>
-                Demo参考 <span class="optional-mark">选填</span>
+                <span class="label-row">Demo参考</span>
                 <input id="requestDemo" type="url" placeholder="可粘贴 TikTok/Reels/竞品视频链接，帮助团队理解风格" />
               </label>
               <label>
-                需要数量 <span class="required-mark">必填</span>
+                <span class="label-row">需要数量 <span class="required-mark">*</span></span>
                 <input id="requestQuantity" type="number" min="1" value="3" required />
               </label>
               <label>
-                期望交付日期 <span class="optional-mark">选填</span>
+                <span class="label-row">期望交付日期</span>
                 <input id="requestDueAt" type="date" />
               </label>
               <label>
-                上传附件 <span class="optional-mark">选填</span>
+                <span class="label-row">上传附件</span>
                 <input id="requestAttachments" type="file" multiple />
               </label>
               <label class="request-note">
-                备注 <span class="optional-mark">选填</span>
+                <span class="label-row">备注</span>
                 <textarea id="requestNote" placeholder="可以填写目标市场、受众画像、核心卖点、字幕语言、画面禁区、品牌调性等。"></textarea>
               </label>
               <button class="btn" type="submit">提交需求</button>
@@ -2239,22 +2383,33 @@
       $("requestProduct").innerHTML = products.map((product) => (
         `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)} · ${escapeHtml(product.sku || product.id)}</option>`
       )).join("");
-      renderRequestProductPreview();
+      renderRequestProductPicker();
       if (!$("requestDueAt").value) {
         const date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
         $("requestDueAt").value = date.toISOString().slice(0, 10);
       }
     }
 
-    function renderRequestProductPreview() {
+    function renderRequestProductPicker() {
       const product = products.find((item) => item.id === $("requestProduct").value) || products[0];
+      $("requestProductButton").innerHTML = productOptionMarkup(product, true);
+      $("requestProductOptions").innerHTML = products.map((item) => `
+        <button class="product-option ${item.id === product?.id ? "active" : ""}" type="button" data-action="request-product-option" data-product="${escapeAttr(item.id)}" role="option" aria-selected="${item.id === product?.id ? "true" : "false"}">
+          ${productOptionMarkup(item, false)}
+        </button>
+      `).join("");
+    }
+
+    function productOptionMarkup(product, withChevron) {
       const cover = productCover(product);
-      $("requestProductPreview").innerHTML = `
-        <div class="product-preview-media">${mediaElement(cover, "", "muted autoplay loop playsinline preload=\"metadata\"")}</div>
-        <div>
-          <h4>${escapeHtml(product?.name || "请选择商品")}</h4>
-          <p>${escapeHtml([product?.owner, product?.sku, product?.category].filter(Boolean).join(" · ") || "选择商品后，这里会展示商品信息和关联素材封面。")}</p>
-        </div>
+      const meta = [product?.owner, product?.sku, product?.category].filter(Boolean).join(" · ") || "请选择商品";
+      return `
+        <span class="${withChevron ? "product-combo-media" : "product-option-media"}">${mediaElement(cover, "", "muted autoplay loop playsinline preload=\"metadata\"")}</span>
+        <span class="${withChevron ? "product-combo-copy" : "product-option-copy"}">
+          <strong>${escapeHtml(product?.name || "请选择商品")}</strong>
+          <span>${escapeHtml(meta)}</span>
+        </span>
+        ${withChevron ? `<span class="combo-chevron">⌄</span>` : `<span class="product-option-check">${product?.id === $("requestProduct").value ? "✓" : ""}</span>`}
       `;
     }
 
@@ -2627,6 +2782,21 @@
           showToast("已打开素材审核详情");
         }
       }
+
+      const productOption = event.target.closest("[data-action='request-product-option']");
+      if (productOption) {
+        $("requestProduct").value = productOption.dataset.product;
+        $("requestProductCombo").classList.remove("open");
+        $("requestProductButton").setAttribute("aria-expanded", "false");
+        renderRequestProductPicker();
+        showToast("关联商品已更新");
+        return;
+      }
+
+      if (!event.target.closest("#requestProductCombo")) {
+        $("requestProductCombo")?.classList.remove("open");
+        $("requestProductButton")?.setAttribute("aria-expanded", "false");
+      }
     });
 
     $("closeDrawer").addEventListener("click", () => closeDrawer(true));
@@ -2718,8 +2888,16 @@
       }
     });
 
+    $("requestProductButton").addEventListener("click", () => {
+      const combo = $("requestProductCombo");
+      const nextOpen = !combo.classList.contains("open");
+      combo.classList.toggle("open", nextOpen);
+      $("requestProductButton").setAttribute("aria-expanded", nextOpen ? "true" : "false");
+      showToast(nextOpen ? "请选择关联商品" : "已收起商品选择");
+    });
+
     $("requestProduct").addEventListener("change", () => {
-      renderRequestProductPreview();
+      renderRequestProductPicker();
       showToast("关联商品已更新");
     });
 
