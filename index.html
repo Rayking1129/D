@@ -2609,10 +2609,10 @@
           </div>
         </section>
         <section class="product-linked-assets">
-          <h3>关联创意素材</h3>
+          <h3>关联创意素材 (${linkedAssets.length})</h3>
           ${linkedAssets.length ? `
             <div class="linked-asset-list">
-              ${linkedAssets.slice(0, 8).map((asset) => `
+              ${linkedAssets.map((asset) => `
                 <article class="linked-asset" data-action="open-asset" data-file="${escapeAttr(asset.file)}">
                   ${mediaElement(assetSrc(asset), "")}
                   <strong>${escapeHtml(asset.title)}</strong>
