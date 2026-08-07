@@ -177,6 +177,7 @@ function publicUser(record) {
   return {
     recordId: record.record_id,
     email: fields["邮箱"],
+    name: fields["姓名"] || fields["名称"] || fields["邮箱"],
     role: fields["角色"] || "reviewer",
     status: fields["状态"] || "启用"
   };
@@ -188,9 +189,11 @@ async function findUserByEmail(email) {
   return users.find((record) => normalizeEmail(record.fields?.["邮箱"]) === normalized) || null;
 }
 
-async function createUser({ email, password, role = "reviewer" }) {
+async function createUser({ email, password, name, role = "reviewer" }) {
   const normalized = normalizeEmail(email);
+  const displayName = String(name || "").trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error("请输入有效邮箱");
+  if (!displayName) throw new Error("请输入姓名");
   if (String(password || "").length < 8) throw new Error("密码至少 8 位");
   const existing = await findUserByEmail(normalized);
   if (existing) throw new Error("该邮箱已注册");
@@ -198,22 +201,37 @@ async function createUser({ email, password, role = "reviewer" }) {
   const appToken = await getAppToken();
   const salt = crypto.randomBytes(16).toString("hex");
   const now = Date.now();
-  const data = await feishu(`/bitable/v1/apps/${appToken}/tables/${CONFIG.userTableId}/records`, {
+  const fields = {
+    "邮箱": normalized,
+    "姓名": displayName,
+    "密码哈希": passwordHash(password, salt),
+    "盐": salt,
+    "角色": role,
+    "状态": "启用",
+    "创建时间": now,
+    "更新时间": now
+  };
+  const requestPath = `/bitable/v1/apps/${appToken}/tables/${CONFIG.userTableId}/records`;
+  const body = {
+    fields
+  };
+  try {
+    const data = await feishu(requestPath, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body)
+    });
+    return publicUser(data.data.record);
+  } catch (error) {
+    const compatibleFields = { ...fields };
+    delete compatibleFields["姓名"];
+    const data = await feishu(requestPath, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      fields: {
-        "邮箱": normalized,
-        "密码哈希": passwordHash(password, salt),
-        "盐": salt,
-        "角色": role,
-        "状态": "启用",
-        "创建时间": now,
-        "更新时间": now
-      }
-    })
-  });
-  return publicUser(data.data.record);
+      body: JSON.stringify({ fields: compatibleFields })
+    });
+    return { ...publicUser(data.data.record), name: displayName };
+  }
 }
 
 async function loginUser({ email, password }) {
@@ -477,7 +495,7 @@ async function updateAsset(user, recordId, patch) {
   if (Array.isArray(patch.tags)) fields["素材标签"] = patch.tags;
   if (typeof patch.comment === "string") fields["修改意见"] = patch.comment;
   if (patch.status) {
-    fields["审核人"] = patch.reviewer || user.email;
+    fields["审核人"] = patch.reviewer || user.name || user.email;
     fields["审核时间"] = patch.reviewedAt ? new Date(patch.reviewedAt).getTime() : now;
   }
   fields["更新时间"] = now;

@@ -191,6 +191,38 @@
       gap: 10px;
     }
 
+    .top-actions {
+      display: grid;
+      justify-items: end;
+      gap: 12px;
+    }
+
+    .user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px 8px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid rgba(0, 0, 0, .08);
+      box-shadow: var(--shadow-soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .user-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: var(--black);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
     .btn {
       min-height: 38px;
       padding: 9px 14px;
@@ -352,12 +384,12 @@
 
     .request-view {
       display: none;
-      gap: 22px;
+      gap: 14px;
     }
 
     .request-hero {
-      min-height: 330px;
-      padding: 44px;
+      min-height: 190px;
+      padding: 28px 34px;
       border-radius: 8px;
       color: var(--ink);
       background:
@@ -371,26 +403,26 @@
     }
 
     .request-hero h3 {
-      margin: 8px 0 10px;
-      font-size: clamp(42px, 5vw, 76px);
-      line-height: .95;
-      letter-spacing: -.04em;
-      max-width: 720px;
+      margin: 7px 0 8px;
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 1;
+      letter-spacing: -.035em;
+      max-width: 760px;
     }
 
     .request-hero p {
       margin: 0;
-      max-width: 720px;
+      max-width: 780px;
       color: #5d5d63;
-      line-height: 1.6;
-      font-size: 18px;
+      line-height: 1.5;
+      font-size: 15px;
     }
 
     .request-form {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-      padding: 26px;
+      gap: 14px;
+      padding: 20px;
       background: rgba(255,255,255,.9);
       border: 1px solid rgba(255,255,255,.94);
       border-radius: 8px;
@@ -456,6 +488,10 @@
     .request-note,
     .request-form .btn {
       grid-column: 1 / -1;
+    }
+
+    .request-note textarea {
+      min-height: 82px;
     }
 
     .request-form .btn {
@@ -1742,17 +1778,42 @@
     }
 
     .auth-tabs button {
-      min-height: 36px;
+      min-height: 48px;
       border-radius: 999px;
       background: transparent;
       color: var(--muted);
       font-weight: 800;
+      font-size: 15px;
+      transition: transform .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
+    }
+
+    .auth-tabs button:hover {
+      transform: translateY(-1px);
+      color: var(--ink);
     }
 
     .auth-tabs button.active {
       background: #fff;
       color: var(--ink);
       box-shadow: var(--shadow-soft);
+    }
+
+    .auth-submit {
+      width: 100%;
+      min-height: 54px;
+      justify-content: center;
+      font-size: 15px;
+      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }
+
+    .auth-submit:hover {
+      transform: translateY(-2px) scale(1.01);
+      filter: brightness(1.04);
+      box-shadow: 0 18px 34px rgba(0,0,0,.18);
+    }
+
+    .auth-name-field.hidden {
+      display: none;
     }
 
     .auth-form {
@@ -1802,6 +1863,7 @@
       .nav { grid-template-columns: repeat(2, 1fr); }
       main { padding: 16px; }
       .topbar { display: grid; }
+      .top-actions { justify-items: start; }
       .toolbar { justify-content: flex-start; }
       .dashboard, .filters { grid-template-columns: 1fr; }
       h2 { font-size: 23px; }
@@ -1847,10 +1909,11 @@
           <button type="button" data-auth-mode="register">Create</button>
         </div>
         <div class="auth-form">
+          <input class="auth-name-field hidden" id="authName" type="text" autocomplete="name" placeholder="Your name" />
           <input id="authEmail" type="email" autocomplete="email" placeholder="name@company.com" required />
           <input id="authPassword" type="password" autocomplete="current-password" placeholder="Password" required minlength="8" />
           <div class="auth-error" id="authError"></div>
-          <button class="btn" id="authSubmit" type="submit">Enter Hub</button>
+          <button class="btn auth-submit" id="authSubmit" type="submit">Enter Hub</button>
         </div>
       </form>
     </div>
@@ -1884,12 +1947,18 @@
           <h2 id="pageTitle">Navos Creative Hub</h2>
           <p class="summary" id="pageSummary">A modern command center for AI creative requests, product-linked assets, version review, and delivery operations.</p>
         </div>
-        <div class="toolbar" id="assetToolbar">
-          <button class="btn secondary" id="resetFilters">清空筛选</button>
-          <button class="btn secondary" id="exportData">导出审核数据</button>
-          <label class="btn secondary" for="importData">导入数据</label>
-          <button class="btn secondary" id="logoutBtn">退出登录</button>
-          <input id="importData" type="file" accept="application/json" hidden />
+        <div class="top-actions">
+          <div class="user-chip" id="userChip">
+            <span class="user-avatar" id="userAvatar">N</span>
+            <span id="userName">Navos User</span>
+          </div>
+          <div class="toolbar" id="assetToolbar">
+            <button class="btn secondary" id="resetFilters">清空筛选</button>
+            <button class="btn secondary" id="exportData">导出审核数据</button>
+            <label class="btn secondary" for="importData">导入数据</label>
+            <button class="btn secondary" id="logoutBtn">退出登录</button>
+            <input id="importData" type="file" accept="application/json" hidden />
+          </div>
         </div>
       </section>
 
@@ -1938,7 +2007,7 @@
               </label>
               <label>
                 <span class="label-row">需要数量 <span class="required-mark">*</span></span>
-                <input id="requestQuantity" type="number" min="1" value="3" required />
+                <input id="requestQuantity" type="number" min="1" value="30" required />
               </label>
               <label>
                 <span class="label-row">期望交付日期</span>
@@ -2149,6 +2218,7 @@
         state.authToken = token;
         localStorage.setItem("creative-hub-token", token);
       }
+      renderUserProfile();
       $("loginShell").classList.add("hidden");
       $("appRoot").classList.remove("auth-locked");
     }
@@ -2159,6 +2229,16 @@
       localStorage.removeItem("creative-hub-token");
       $("loginShell").classList.remove("hidden");
       $("appRoot").classList.add("auth-locked");
+    }
+
+    function displayUserName(user = state.currentUser) {
+      return user?.name || user?.email || "Navos User";
+    }
+
+    function renderUserProfile() {
+      const name = displayUserName();
+      if ($("userName")) $("userName").textContent = name;
+      if ($("userAvatar")) $("userAvatar").textContent = name.trim().slice(0, 1).toUpperCase() || "N";
     }
 
     async function checkAuth() {
@@ -2522,6 +2602,7 @@
         const date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
         $("requestDueAt").value = date.toISOString().slice(0, 10);
       }
+      if (!$("requestQuantity").value) $("requestQuantity").value = "30";
     }
 
     function renderRequestProductPicker() {
@@ -2762,7 +2843,7 @@
       const current = state.records[state.selected];
       const now = new Date().toISOString();
       const auditPatch = patch.status ? {
-        reviewer: state.currentUser?.email || current.reviewer || "当前用户",
+        reviewer: displayUserName() || current.reviewer || "当前用户",
         reviewedAt: now
       } : {};
       state.records[state.selected] = {
@@ -2864,6 +2945,7 @@
       renderGrid(list);
       renderTable(list);
       renderDrawer();
+      renderUserProfile();
       $("productGrid").style.display = state.view === "products" ? "grid" : "none";
       $("productDetail").hidden = state.view !== "productDetail";
       $("requestView").style.display = state.view === "requests" ? "grid" : "none";
@@ -3132,8 +3214,11 @@
         state.authMode = button.dataset.authMode;
         document.querySelectorAll("[data-auth-mode]").forEach((item) => item.classList.toggle("active", item === button));
         $("authForm").querySelector("h3").textContent = state.authMode === "login" ? "Sign in" : "Create account";
-        $("authHelp").textContent = state.authMode === "login" ? "Use your work email to enter the creative asset hub." : "Create an internal reviewer account. Passwords are stored as salted hashes.";
-        $("authSubmit").textContent = state.authMode === "login" ? "Enter Hub" : "Create Account";
+        $("authHelp").textContent = state.authMode === "login" ? "Use your work email to enter the creative asset hub." : "Create an internal reviewer account and sign in automatically.";
+        $("authSubmit").textContent = state.authMode === "login" ? "Enter Hub" : "注册并登录";
+        $("authName").classList.toggle("hidden", state.authMode === "login");
+        $("authName").required = state.authMode === "register";
+        $("authPassword").autocomplete = state.authMode === "login" ? "current-password" : "new-password";
         $("authError").textContent = "";
         showToast(state.authMode === "login" ? "已切换到登录" : "已切换到注册");
       });
@@ -3151,6 +3236,7 @@
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                name: $("authName").value,
                 email: $("authEmail").value,
                 password: $("authPassword").value
               })
@@ -3162,8 +3248,8 @@
           {
             loadingTitle: isLogin ? "正在登录" : "正在注册账号",
             loadingMessage: "系统正在验证账号并连接飞书数据库，请稍候。",
-            successTitle: isLogin ? "登录成功" : "注册成功",
-            successMessage: isLogin ? "欢迎回来，正在进入工作台。" : "账号已创建，正在进入工作台。",
+            successTitle: isLogin ? "登录成功" : "注册并登录成功",
+            successMessage: isLogin ? "欢迎回来，正在进入工作台。" : "账号已创建并完成登录，正在进入工作台。",
             errorTitle: isLogin ? "登录失败" : "注册失败",
             autoClose: 1200
           }
