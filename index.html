@@ -1,0 +1,2528 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nike Dunk Panda AI 创意素材管理系统</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --surface: rgba(255, 255, 255, .78);
+      --panel: #ffffff;
+      --ink: #1d1d1f;
+      --muted: #6e6e73;
+      --soft: #86868b;
+      --line: rgba(0, 0, 0, .09);
+      --black: #1d1d1f;
+      --green: #248a3d;
+      --amber: #b25a00;
+      --red: #d70015;
+      --blue: #0071e3;
+      --violet: #7d4eff;
+      --shadow: 0 18px 45px rgba(0, 0, 0, .08);
+      --shadow-soft: 0 8px 26px rgba(0, 0, 0, .06);
+      --blur: blur(22px) saturate(180%);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #fbfbfd 0%, var(--bg) 45%, #ededf0 100%);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    a { color: inherit; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 22px 18px;
+      background: rgba(246, 246, 248, .74);
+      color: var(--ink);
+      border-right: 1px solid var(--line);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      background: var(--black);
+      color: #fff;
+      font-weight: 900;
+      border-radius: 8px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .16);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.25;
+      letter-spacing: -.01em;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 13px;
+      color: #4f4f55;
+      background: transparent;
+      border-radius: 8px;
+      text-align: left;
+      font-weight: 650;
+      transition: background .18s ease, color .18s ease, transform .18s ease;
+    }
+
+    .nav button:hover {
+      background: rgba(255, 255, 255, .72);
+      color: var(--ink);
+    }
+
+    .nav button.active {
+      background: #fff;
+      color: var(--ink);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .side-note {
+      margin-top: auto;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: #57575d;
+      font-size: 12px;
+      line-height: 1.6;
+      background: rgba(255, 255, 255, .62);
+    }
+
+    .side-logout {
+      justify-content: center;
+      width: 100%;
+    }
+
+    main {
+      min-width: 0;
+      padding: 30px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 24px;
+      padding: 10px 0 6px;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+    }
+
+    .eyebrow {
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    h2 {
+      margin: 6px 0 8px;
+      font-size: clamp(28px, 3vw, 44px);
+      line-height: 1.15;
+      letter-spacing: -.02em;
+    }
+
+    .summary {
+      margin: 0;
+      color: #5d5d63;
+      line-height: 1.62;
+      max-width: 720px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      min-height: 38px;
+      padding: 9px 14px;
+      background: var(--black);
+      color: #fff;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, .10);
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 24px rgba(0, 0, 0, .12);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, .74);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .btn.good { background: var(--green); }
+    .btn.warn { background: var(--amber); }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(140px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .metric {
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(255, 255, 255, .9);
+      border-radius: 8px;
+      padding: 18px;
+      min-height: 126px;
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--soft);
+      font-size: 12px;
+      margin-bottom: 14px;
+      font-weight: 760;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 34px;
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+
+    .metric small {
+      display: block;
+      color: var(--muted);
+      margin-top: 9px;
+    }
+
+    .bar {
+      height: 8px;
+      margin-top: 13px;
+      background: #e8e8ed;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: var(--w);
+      background: var(--c);
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(260px, 620px);
+      gap: 10px;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      margin-bottom: 22px;
+      box-shadow: none;
+    }
+
+    .field {
+      position: relative;
+    }
+
+    .field input, .field select, textarea, .review-form select, .review-form input {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid rgba(0, 0, 0, .08);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .82);
+      color: var(--ink);
+      padding: 10px 18px;
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 10px 24px rgba(0, 0, 0, .05);
+    }
+
+    .field input:focus, .field select:focus, textarea:focus {
+      border-color: rgba(0, 113, 227, .52);
+      box-shadow: 0 0 0 4px rgba(0, 113, 227, .12);
+      background: #fff;
+    }
+
+    .review-form select, .review-form input {
+      border-radius: 8px;
+      box-shadow: none;
+    }
+
+    textarea {
+      min-height: 104px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .content {
+      display: block;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .product-card {
+      min-height: 220px;
+      padding: 18px;
+      background: rgba(255, 255, 255, .9);
+      border: 1px solid rgba(255, 255, 255, .95);
+      border-radius: 8px;
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      gap: 16px;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, .10);
+    }
+
+    .request-view {
+      display: none;
+      gap: 22px;
+    }
+
+    .request-hero {
+      min-height: 330px;
+      padding: 44px;
+      border-radius: 8px;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,255,255,.72)),
+        linear-gradient(120deg, rgba(0,113,227,.12), transparent 46%),
+        linear-gradient(315deg, rgba(125,78,255,.16), transparent 42%);
+      border: 1px solid rgba(255,255,255,.96);
+      box-shadow: 0 24px 70px rgba(0,0,0,.08);
+      display: flex;
+      align-items: center;
+    }
+
+    .request-hero h3 {
+      margin: 8px 0 10px;
+      font-size: clamp(42px, 5vw, 76px);
+      line-height: .95;
+      letter-spacing: -.04em;
+      max-width: 720px;
+    }
+
+    .request-hero p {
+      margin: 0;
+      max-width: 720px;
+      color: #5d5d63;
+      line-height: 1.6;
+      font-size: 18px;
+    }
+
+    .request-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      padding: 24px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(255,255,255,.94);
+      border-radius: 8px;
+      box-shadow: 0 22px 58px rgba(0,0,0,.08);
+    }
+
+    .request-form input,
+    .request-form select,
+    .request-form textarea {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid rgba(0,0,0,.1);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .request-form input:focus,
+    .request-form select:focus,
+    .request-form textarea:focus {
+      border-color: rgba(0,113,227,.5);
+      box-shadow: 0 0 0 4px rgba(0,113,227,.12);
+    }
+
+    .request-note,
+    .request-form .btn {
+      grid-column: 1 / -1;
+    }
+
+    .request-form .btn {
+      justify-content: center;
+      min-height: 48px;
+    }
+
+    .required-mark {
+      color: var(--red);
+      font-weight: 900;
+    }
+
+    .optional-mark {
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .product-preview {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 14px;
+      border-radius: 8px;
+      background: #f5f5f7;
+      border: 1px solid rgba(0,0,0,.06);
+    }
+
+    .product-preview-media {
+      width: 110px;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #111;
+    }
+
+    .product-preview-media video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-preview h4 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      letter-spacing: -.01em;
+    }
+
+    .product-preview p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 13px;
+    }
+
+    .success-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      place-items: center;
+      background: rgba(0,0,0,.34);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .success-modal.show { display: grid; }
+
+    .success-card {
+      width: min(420px, calc(100vw - 32px));
+      padding: 24px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 30px 90px rgba(0,0,0,.28);
+      text-align: center;
+    }
+
+    .success-icon {
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 16px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #e4f6e9;
+      color: var(--green);
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .success-card h3 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: -.02em;
+    }
+
+    .success-card p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .product-hero {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+    }
+
+    .product-thumb {
+      width: 84px;
+      height: 84px;
+      border-radius: 8px;
+      background: #111;
+      overflow: hidden;
+    }
+
+    .product-thumb .media-visual {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
+      object-fit: cover;
+    }
+
+    .product-card h3 {
+      margin: 0 0 7px;
+      font-size: 19px;
+      line-height: 1.22;
+      letter-spacing: -.01em;
+    }
+
+    .product-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .product-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .product-stat {
+      padding: 10px;
+      background: #f5f5f7;
+      border-radius: 8px;
+    }
+
+    .product-stat strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .product-stat span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .product-detail {
+      display: grid;
+      gap: 22px;
+    }
+
+    .product-detail[hidden] {
+      display: none !important;
+    }
+
+    .product-detail-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .product-gallery,
+    .product-info-panel,
+    .product-linked-assets {
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(255, 255, 255, .92);
+      border-radius: 8px;
+      box-shadow: 0 20px 52px rgba(0, 0, 0, .08);
+      overflow: hidden;
+    }
+
+    .product-gallery-main {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      background: #f5f5f7;
+      display: block;
+    }
+
+    .product-gallery-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .product-gallery-thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 2px solid transparent;
+      background: #f5f5f7;
+      cursor: pointer;
+      flex: none;
+    }
+
+    .product-gallery-thumb.active {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, .16);
+    }
+
+    .product-gallery-caption {
+      padding: 0 14px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .product-info-panel {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .product-back {
+      width: max-content;
+      margin-bottom: 4px;
+    }
+
+    .product-info-panel h3 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.08;
+      letter-spacing: -.03em;
+    }
+
+    .product-price {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+
+    .product-description {
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .feature-list li {
+      list-style: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f5f5f7;
+      color: #2d2d31;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--line);
+    }
+
+    .spec-grid div {
+      background: #fff;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+    }
+
+    .spec-grid span:first-child {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .spec-grid strong {
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .product-linked-assets {
+      padding: 18px;
+    }
+
+    .product-linked-assets h3 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .linked-asset-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .linked-asset {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .linked-asset .media-visual {
+      aspect-ratio: 9 / 16;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .linked-asset strong {
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .asset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 22px;
+    }
+
+    .asset-card {
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(255, 255, 255, .92);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, .08);
+      transition: transform .2s ease, box-shadow .2s ease, outline-color .2s ease;
+      cursor: pointer;
+    }
+
+    .asset-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, .10);
+    }
+
+    .asset-card.selected {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #0f0f10;
+      display: block;
+    }
+
+    .media-visual {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #0f0f10;
+      display: block;
+    }
+
+    .card-video {
+      height: auto;
+      aspect-ratio: 9 / 16;
+      max-height: 360px;
+      object-fit: cover;
+    }
+
+    .phone-frame {
+      position: relative;
+      width: min(100%, 278px);
+      margin: 0 auto;
+      aspect-ratio: 9 / 19.5;
+      padding: 9px;
+      border-radius: 38px;
+      background:
+        linear-gradient(145deg, #f7f8f9 0%, #c9ccd1 36%, #5b626b 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, .75),
+        inset 0 -8px 16px rgba(0, 0, 0, .22),
+        0 22px 42px rgba(0, 0, 0, .20);
+    }
+
+    .phone-frame::before {
+      content: "";
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      width: 104px;
+      height: 24px;
+      transform: translateX(-50%);
+      border-radius: 0 0 15px 15px;
+      background: #050506;
+      z-index: 2;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, .12);
+    }
+
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      right: -3px;
+      top: 110px;
+      width: 3px;
+      height: 68px;
+      border-radius: 3px;
+      background: #737a83;
+    }
+
+    .phone-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+      background: #000;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+    }
+
+    .phone-screen .media-visual {
+      aspect-ratio: auto;
+    }
+
+    .phone-label {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 16px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 10px;
+      color: #fff;
+      background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .72));
+      text-shadow: 0 1px 8px rgba(0, 0, 0, .72);
+      pointer-events: none;
+    }
+
+    .phone-label strong {
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .phone-label span {
+      font-size: 11px;
+      opacity: .78;
+      white-space: nowrap;
+    }
+
+    .asset-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .asset-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .asset-title h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      letter-spacing: -.01em;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #f0f0f3;
+      color: #3a3a3c;
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .pill.pass { background: #e4f6e9; color: var(--green); }
+    .pill.revise { background: #fff3df; color: var(--amber); }
+    .pill.pending { background: #ececf1; color: #5f6671; }
+    .pill.published { background: #e5f1ff; color: var(--blue); }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 24px;
+    }
+
+    .comment-preview {
+      padding: 10px 11px;
+      border-radius: 8px;
+      background: #fff7eb;
+      color: #744100;
+      font-size: 12px;
+      line-height: 1.45;
+      border: 1px solid rgba(178, 90, 0, .16);
+    }
+
+    .card-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .drawer-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+    }
+
+    .drawer-shell.open {
+      display: block;
+    }
+
+    .drawer-backdrop {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, .28);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .asset-drawer {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      bottom: 18px;
+      width: min(900px, calc(100vw - 36px));
+      background: rgba(255, 255, 255, .94);
+      border: 1px solid rgba(255, 255, 255, .96);
+      border-radius: 8px;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .24);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      transform: translateX(18px);
+      animation: drawerIn .18s ease forwards;
+    }
+
+    @keyframes drawerIn {
+      to { transform: translateX(0); }
+    }
+
+    .drawer-head {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .drawer-head h3 {
+      margin: 5px 0 6px;
+      font-size: 23px;
+      line-height: 1.18;
+      letter-spacing: -.02em;
+    }
+
+    .drawer-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: #f0f0f3;
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      box-shadow: none;
+    }
+
+    .drawer-body {
+      overflow: auto;
+      padding: 18px 24px 22px;
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .drawer-video {
+      width: 100%;
+      max-height: none;
+      border-radius: 8px;
+      overflow: visible;
+      background: transparent;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+
+    .drawer-video .phone-frame {
+      width: min(310px, 72vw);
+    }
+
+    .drawer-video video { object-fit: cover; }
+
+    .review-form {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(245, 245, 247, .72);
+      border: 1px solid rgba(0, 0, 0, .06);
+      border-radius: 8px;
+    }
+
+    .drawer-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .review-saved {
+      padding: 13px 14px;
+      border-radius: 8px;
+      background: #eef8f0;
+      color: #17612d;
+      border: 1px solid rgba(36, 138, 61, .18);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .review-saved strong {
+      display: block;
+      margin-bottom: 3px;
+      color: #0f4f24;
+    }
+
+    .drawer-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .drawer-actions .btn {
+      justify-content: center;
+      min-height: 44px;
+      font-size: 14px;
+    }
+
+    .review-panel {
+      position: sticky;
+      top: 20px;
+      background: rgba(255, 255, 255, .88);
+      border: 1px solid rgba(255, 255, 255, .96);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+    }
+
+    .panel-head {
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h3 {
+      margin: 0 0 6px;
+      font-size: 19px;
+      letter-spacing: -.01em;
+    }
+
+    .panel-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .panel-body {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #343438;
+      letter-spacing: .01em;
+    }
+
+    .status-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 12px;
+      background: #f5f5f7;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .toggle-row input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--black);
+    }
+
+    .table-view {
+      display: none;
+      background: rgba(255, 255, 255, .9);
+      border: 1px solid rgba(255, 255, 255, .95);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 780px;
+    }
+
+    th, td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f5f5f7;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    .empty {
+      padding: 34px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .86);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 20;
+      background: #111;
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: .2s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .login-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
+      min-height: 100vh;
+      background: #050508;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .login-shell.hidden { display: none; }
+
+    .login-visual {
+      position: relative;
+      padding: 52px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      isolation: isolate;
+    }
+
+    .login-visual::before {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      z-index: -2;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,.18), transparent 34%),
+        radial-gradient(circle at 28% 26%, rgba(0,113,227,.72), transparent 24%),
+        radial-gradient(circle at 74% 38%, rgba(125,78,255,.58), transparent 28%),
+        radial-gradient(circle at 52% 76%, rgba(36,138,61,.34), transparent 22%),
+        #050508;
+      filter: saturate(120%);
+    }
+
+    .login-visual::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background-image:
+        linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(90deg, #000, transparent 86%);
+    }
+
+    .login-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.24);
+      font-weight: 900;
+      backdrop-filter: blur(18px);
+    }
+
+    .login-copy h2 {
+      margin: 0 0 18px;
+      max-width: 780px;
+      font-size: clamp(42px, 6vw, 86px);
+      line-height: .95;
+      letter-spacing: -.05em;
+    }
+
+    .login-copy p {
+      margin: 0;
+      max-width: 560px;
+      color: rgba(255,255,255,.72);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .login-stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .login-stats span {
+      padding: 10px 13px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.18);
+      color: rgba(255,255,255,.78);
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(18px);
+    }
+
+    .login-panel-wrap {
+      display: grid;
+      place-items: center;
+      padding: 34px;
+      background: rgba(255,255,255,.04);
+      backdrop-filter: blur(30px);
+    }
+
+    .login-panel {
+      width: min(100%, 430px);
+      padding: 26px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.88);
+      color: var(--ink);
+      border: 1px solid rgba(255,255,255,.74);
+      box-shadow: 0 32px 90px rgba(0,0,0,.42);
+    }
+
+    .login-panel h3 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: -.03em;
+    }
+
+    .login-panel p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 5px;
+      border-radius: 999px;
+      background: #f0f0f3;
+    }
+
+    .auth-tabs button {
+      min-height: 36px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .auth-tabs button.active {
+      background: #fff;
+      color: var(--ink);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 13px;
+    }
+
+    .auth-form input {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid rgba(0,0,0,.1);
+      border-radius: 8px;
+      padding: 11px 13px;
+      outline: none;
+    }
+
+    .auth-form input:focus {
+      border-color: rgba(0,113,227,.5);
+      box-shadow: 0 0 0 4px rgba(0,113,227,.12);
+    }
+
+    .auth-error {
+      min-height: 18px;
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .app.auth-locked { display: none; }
+
+    @media (max-width: 1120px) {
+      .dashboard { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
+      .filters { grid-template-columns: minmax(220px, 1fr) 150px 150px; }
+      .product-detail-shell { grid-template-columns: 1fr; }
+      .drawer-body { grid-template-columns: 300px minmax(0, 1fr); }
+      .drawer-video .phone-frame { width: min(285px, 72vw); }
+    }
+
+    @media (max-width: 760px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+        padding: 16px;
+      }
+      .nav { grid-template-columns: repeat(2, 1fr); }
+      main { padding: 16px; }
+      .topbar { display: grid; }
+      .toolbar { justify-content: flex-start; }
+      .dashboard, .filters { grid-template-columns: 1fr; }
+      h2 { font-size: 23px; }
+      .request-form { grid-template-columns: 1fr; }
+      .login-shell { grid-template-columns: 1fr; }
+      .login-visual { min-height: 42vh; padding: 28px; }
+      .login-panel-wrap { padding: 18px; }
+      .asset-drawer {
+        inset: 8px;
+        width: auto;
+      }
+      .drawer-body { grid-template-columns: 1fr; }
+      .product-stats, .drawer-actions { grid-template-columns: 1fr 1fr; }
+      .spec-grid { grid-template-columns: 1fr; }
+      .linked-asset-list { grid-template-columns: 1fr 1fr; }
+      .product-info-panel h3 { font-size: 27px; }
+      .drawer-video .phone-frame { width: min(250px, 68vw); }
+    }
+  </style>
+</head>
+<body>
+  <section class="login-shell" id="loginShell">
+    <div class="login-visual">
+      <div class="login-logo">NK</div>
+      <div class="login-copy">
+        <h2>Creative control for high-velocity drops.</h2>
+        <p>Review AI video assets, route revision notes, and keep every product launch moving from one cinematic command center.</p>
+      </div>
+      <div class="login-stats">
+        <span>AI Asset Review</span>
+        <span>Versioned Creative Ops</span>
+        <span>Global Commerce Ready</span>
+      </div>
+    </div>
+    <div class="login-panel-wrap">
+      <form class="login-panel" id="authForm">
+        <h3>Sign in</h3>
+        <p id="authHelp">Use your work email to enter the creative asset hub.</p>
+        <div class="auth-tabs">
+          <button type="button" class="active" data-auth-mode="login">Login</button>
+          <button type="button" data-auth-mode="register">Create</button>
+        </div>
+        <div class="auth-form">
+          <input id="authEmail" type="email" autocomplete="email" placeholder="name@company.com" required />
+          <input id="authPassword" type="password" autocomplete="current-password" placeholder="Password" required minlength="8" />
+          <div class="auth-error" id="authError"></div>
+          <button class="btn" id="authSubmit" type="submit">Enter Hub</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div class="app auth-locked" id="appRoot">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">NK</div>
+        <div>
+          <h1>Navos<br />Creative Hub</h1>
+          <p>AI 内容创意素材管理</p>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <button class="active" data-view="products">商品库</button>
+        <button data-view="grid">素材库</button>
+        <button data-view="requests">需求列表</button>
+        <button data-view="table">审核台账</button>
+      </nav>
+      <div class="side-note">
+        Powered by Feishu database. Creative briefs, review states, versions, and delivery notes stay synced for the team.
+      </div>
+      <button class="btn secondary side-logout" id="sideLogoutBtn">退出登录</button>
+    </aside>
+
+    <main>
+      <section class="topbar">
+        <div>
+          <div class="eyebrow" id="pageEyebrow">Navos Creative Hub</div>
+          <h2 id="pageTitle">Navos Creative Hub</h2>
+          <p class="summary" id="pageSummary">A modern command center for AI creative requests, product-linked assets, version review, and delivery operations.</p>
+        </div>
+        <div class="toolbar" id="assetToolbar">
+          <button class="btn secondary" id="resetFilters">清空筛选</button>
+          <button class="btn secondary" id="exportData">导出审核数据</button>
+          <label class="btn secondary" for="importData">导入数据</label>
+          <button class="btn secondary" id="logoutBtn">退出登录</button>
+          <input id="importData" type="file" accept="application/json" hidden />
+        </div>
+      </section>
+
+      <section class="dashboard" id="dashboard" aria-label="数据大盘"></section>
+
+      <section class="filters" id="filters" aria-label="筛选器">
+        <div class="field">
+          <input id="search" type="search" placeholder="搜索素材、商品、标签或修改意见" />
+        </div>
+      </section>
+
+      <section class="content">
+        <div>
+          <div class="product-grid" id="productGrid"></div>
+          <div class="product-detail" id="productDetail" hidden></div>
+          <div class="request-view" id="requestView">
+            <section class="request-hero">
+              <div>
+                <div class="eyebrow">Creative Brief Intake</div>
+                <h3>Submit a new creative demand</h3>
+                <p>Choose the product, define the creative angle, attach references, and set the delivery expectation for the production queue.</p>
+              </div>
+            </section>
+            <form class="request-form" id="requestForm">
+              <label>
+                关联商品 <span class="required-mark">必填</span>
+                <select id="requestProduct" required></select>
+              </label>
+              <div class="product-preview" id="requestProductPreview"></div>
+              <label>
+                创意类型 <span class="optional-mark">选填</span>
+                <select id="requestDirection">
+                  <option>无强要求</option>
+                  <option>产品故事 Product Story</option>
+                  <option>街头穿搭 Streetwear Lifestyle</option>
+                  <option>性能展示 Performance Demo</option>
+                  <option>UGC 开场钩子 UGC Hook</option>
+                  <option>新品预热 Launch Teaser</option>
+                  <option>修改变体 Revision Variant</option>
+                </select>
+              </label>
+              <label>
+                Demo参考 <span class="optional-mark">选填</span>
+                <input id="requestDemo" type="url" placeholder="可粘贴 TikTok/Reels/竞品视频链接，帮助团队理解风格" />
+              </label>
+              <label>
+                需要数量 <span class="required-mark">必填</span>
+                <input id="requestQuantity" type="number" min="1" value="3" required />
+              </label>
+              <label>
+                期望交付日期 <span class="optional-mark">选填</span>
+                <input id="requestDueAt" type="date" />
+              </label>
+              <label>
+                上传附件 <span class="optional-mark">选填</span>
+                <input id="requestAttachments" type="file" multiple />
+              </label>
+              <label class="request-note">
+                备注 <span class="optional-mark">选填</span>
+                <textarea id="requestNote" placeholder="可以填写目标市场、受众画像、核心卖点、字幕语言、画面禁区、品牌调性等。"></textarea>
+              </label>
+              <button class="btn" type="submit">提交需求</button>
+            </form>
+          </div>
+          <div class="asset-grid" id="assetGrid"></div>
+          <div class="table-view" id="tableView">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>素材 / 商品</th>
+                    <th>版本</th>
+                    <th>审核状态</th>
+                    <th>发布</th>
+                    <th>标签</th>
+                    <th>修改意见</th>
+                    <th>更新时间</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="empty" id="emptyState" hidden>没有匹配的素材，请调整筛选条件。</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-shell" id="drawerShell" aria-hidden="true">
+    <button class="drawer-backdrop" id="drawerBackdrop" aria-label="关闭详情"></button>
+    <aside class="asset-drawer" aria-label="素材详情抽屉">
+      <div class="drawer-head">
+        <div>
+          <div class="eyebrow">Asset Review</div>
+          <h3 id="drawerTitle">素材详情</h3>
+          <p id="drawerSubtitle"></p>
+        </div>
+        <button class="icon-btn" id="closeDrawer" aria-label="关闭">×</button>
+      </div>
+      <div class="drawer-body" id="drawerBody"></div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast">已保存</div>
+  <div class="success-modal" id="requestSuccessModal" aria-hidden="true">
+    <div class="success-card">
+      <div class="success-icon">✓</div>
+      <h3>需求提交成功</h3>
+      <p id="requestSuccessText">你的创意需求已进入制作队列。</p>
+      <button class="btn" id="closeSuccessModal" type="button">继续提交</button>
+    </div>
+  </div>
+
+  <script>
+    let assets = [
+      { file: "Dunk_Panda_AfterClass.mp4", title: "After Class", scene: "校园课后", size: 6100859 },
+      { file: "Dunk_Panda_AfterClass_V2.mp4", title: "After Class V2", scene: "校园课后", size: 6077212 },
+      { file: "Dunk_Panda_BalancePodium.mp4", title: "Balance Podium", scene: "视觉实验", size: 5712823 },
+      { file: "Dunk_Panda_Bball_Court.mp4", title: "Basketball Court", scene: "篮球场", size: 5631924 },
+      { file: "Dunk_Panda_BlackWhiteAwakening.mp4", title: "Black White Awakening", scene: "黑白觉醒", size: 4684414 },
+      { file: "Dunk_Panda_Chessboard.mp4", title: "Chessboard", scene: "棋盘空间", size: 5770020 },
+      { file: "Dunk_Panda_CinemaGrade.mp4", title: "Cinema Grade", scene: "电影质感", size: 5502925 },
+      { file: "Dunk_Panda_CityBlackWhite.mp4", title: "City Black White", scene: "城市黑白", size: 5144866 },
+      { file: "Dunk_Panda_CityFlow_Subway.mp4", title: "City Flow Subway", scene: "地铁通勤", size: 6144551 },
+      { file: "Dunk_Panda_CollegeGirl.mp4", title: "College Girl", scene: "校园女孩", size: 5897116 },
+      { file: "Dunk_Panda_College_Athlete.mp4", title: "College Athlete", scene: "校园运动", size: 6144793 },
+      { file: "Dunk_Panda_CoupleStreet.mp4", title: "Couple Street", scene: "情侣街头", size: 5789012 },
+      { file: "Dunk_Panda_CyberMarket.mp4", title: "Cyber Market", scene: "未来市集", size: 4887732 },
+      { file: "Dunk_Panda_DarkStreet_2Sub.mp4", title: "Dark Street 2Sub", scene: "暗街双字幕", size: 6249645 },
+      { file: "Dunk_Panda_DarkTechwear.mp4", title: "Dark Techwear", scene: "机能暗黑", size: 5740651 },
+      { file: "Dunk_Panda_Dopamine.mp4", title: "Dopamine", scene: "多巴胺色彩", size: 5612866 },
+      { file: "Dunk_Panda_Ferrofluid.mp4", title: "Ferrofluid", scene: "流体科技", size: 5207668 },
+      { file: "Dunk_Panda_GoldenHour.mp4", title: "Golden Hour", scene: "金色时刻", size: 5855579 },
+      { file: "Dunk_Panda_GravityCollision.mp4", title: "Gravity Collision", scene: "重力碰撞", size: 5617341 },
+      { file: "Dunk_Panda_GravityField.mp4", title: "Gravity Field", scene: "重力场", size: 5300273 },
+      { file: "Dunk_Panda_HighContrast_Denim.mp4", title: "High Contrast Denim", scene: "高反差牛仔", size: 6405435 },
+      { file: "Dunk_Panda_HipHopBGM.mp4", title: "Hip Hop BGM", scene: "嘻哈节奏", size: 5919921 },
+      { file: "Dunk_Panda_Kaleidoscope.mp4", title: "Kaleidoscope", scene: "万花筒", size: 4306598 },
+      { file: "Dunk_Panda_LaserSculpt.mp4", title: "Laser Sculpt", scene: "激光雕刻", size: 5752263 },
+      { file: "Dunk_Panda_LightBeam.mp4", title: "Light Beam", scene: "光束舞台", size: 5697030 },
+      { file: "Dunk_Panda_LogoLayout.mp4", title: "Logo Layout", scene: "品牌排版", size: 6038967 },
+      { file: "Dunk_Panda_LogoTop.mp4", title: "Logo Top", scene: "Logo 顶视", size: 6294942 },
+      { file: "Dunk_Panda_MagneticLevitation.mp4", title: "Magnetic Levitation", scene: "磁悬浮", size: 5050845 },
+      { file: "Dunk_Panda_MaterialMacro.mp4", title: "Material Macro", scene: "材质微距", size: 4632334 },
+      { file: "Dunk_Panda_Monsoon.mp4", title: "Monsoon", scene: "季风雨境", size: 5575801 },
+      { file: "Dunk_Panda_MontageSplit.mp4", title: "Montage Split", scene: "分屏蒙太奇", size: 5247162 },
+      { file: "Dunk_Panda_MonumentValley.mp4", title: "Monument Valley", scene: "纪念碑空间", size: 5023763 },
+      { file: "Dunk_Panda_NeonNightOwl.mp4", title: "Neon Night Owl", scene: "霓虹夜行", size: 6014097 },
+      { file: "Dunk_Panda_PaintBlast.mp4", title: "Paint Blast", scene: "颜料爆破", size: 5861664 },
+      { file: "Dunk_Panda_PostPractice.mp4", title: "Post Practice", scene: "训练之后", size: 6013051 },
+      { file: "Dunk_Panda_PureWhite.mp4", title: "Pure White", scene: "纯白空间", size: 5639470 },
+      { file: "Dunk_Panda_Rainforest.mp4", title: "Rainforest", scene: "雨林场景", size: 5213659 },
+      { file: "Dunk_Panda_RainyWait.mp4", title: "Rainy Wait", scene: "雨中等待", size: 6221755 },
+      { file: "Dunk_Panda_RooftopChill.mp4", title: "Rooftop Chill", scene: "天台氛围", size: 6036289 },
+      { file: "Dunk_Panda_SkaterBoy.mp4", title: "Skater Boy", scene: "滑板男孩", size: 6126617 },
+      { file: "Dunk_Panda_SkaterGirl.mp4", title: "Skater Girl", scene: "滑板女孩", size: 5944006 },
+      { file: "Dunk_Panda_TheOne.mp4", title: "The One", scene: "主推款", size: 4561079 },
+      { file: "Dunk_Panda_TikTok_RefImg.mp4", title: "TikTok Ref Img", scene: "参考图风格", size: 5975839 }
+    ];
+
+    let products = [
+      {
+        id: "dunk-panda",
+        name: "Nike Dunk Low Retro Panda",
+        sku: "DD1391-100",
+        category: "Sneaker / Short Video Creative",
+        owner: "Nike",
+        description: "黑白熊猫 Dunk 商品创意资产池，当前 43 条 AI 短视频素材均关联到该商品。",
+        cover: "Dunk_Panda_AfterClass.mp4"
+      }
+    ];
+
+    const STORAGE_KEY = "nike-dunk-panda-creative-hub-v1";
+    const API_BASE = location.protocol === "file:" ? "http://localhost:8787" : "";
+    const defaultTags = ["校园", "街头", "科技感", "产品特写", "情侣", "运动", "夜景", "品牌露出", "实验视觉", "可投放"];
+    const state = {
+      records: loadRecords(),
+      selected: assets[0].file,
+      view: "products",
+      drawerOpen: false,
+      lastCompleted: null,
+      backendOnline: false,
+      allVersionCount: assets.length,
+      authMode: "login",
+      authToken: localStorage.getItem("creative-hub-token") || "",
+      currentUser: null,
+      query: "",
+      productFilter: "all",
+      selectedProductId: "",
+      productGalleryIndex: 0,
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function loadRecords() {
+      const base = Object.fromEntries(assets.map((asset) => [asset.file, {
+        productId: "dunk-panda",
+        status: "pending",
+        published: false,
+        tags: seedTags(asset),
+        comment: "",
+        updatedAt: ""
+      }]));
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        return Object.fromEntries(assets.map((asset) => [asset.file, { ...base[asset.file], ...(saved[asset.file] || {}) }]));
+      } catch {
+        return base;
+      }
+    }
+
+    function seedTags(asset) {
+      const text = `${asset.title} ${asset.scene}`.toLowerCase();
+      const tags = [];
+      if (/college|after|校园/.test(text)) tags.push("校园");
+      if (/street|skater|city|subway|rooftop|街|城市|地铁/.test(text)) tags.push("街头");
+      if (/cyber|laser|gravity|magnetic|ferro|tech|科技|重力|激光|磁/.test(text)) tags.push("科技感");
+      if (/macro|logo|top|material|the one|品牌|微距|主推/.test(text)) tags.push("产品特写");
+      if (/couple|情侣/.test(text)) tags.push("情侣");
+      if (/bball|athlete|practice|运动|篮球|训练/.test(text)) tags.push("运动");
+      if (/night|dark|neon|暗|夜/.test(text)) tags.push("夜景");
+      if (/logo|brand|品牌/.test(text)) tags.push("品牌露出");
+      if (/kaleidoscope|podium|paint|monument|实验|万花筒|空间/.test(text)) tags.push("实验视觉");
+      return tags.length ? tags : ["可投放"];
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+      showToast("已保存");
+    }
+
+    async function apiFetch(path, options = {}) {
+      const headers = {
+        ...(options.headers || {})
+      };
+      if (state.authToken) headers.Authorization = `Bearer ${state.authToken}`;
+      if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+      return fetch(`${API_BASE}${path}`, { ...options, headers });
+    }
+
+    function setAuthenticated(user, token) {
+      state.currentUser = user;
+      if (token) {
+        state.authToken = token;
+        localStorage.setItem("creative-hub-token", token);
+      }
+      $("loginShell").classList.add("hidden");
+      $("appRoot").classList.remove("auth-locked");
+    }
+
+    function setLoggedOut() {
+      state.currentUser = null;
+      state.authToken = "";
+      localStorage.removeItem("creative-hub-token");
+      $("loginShell").classList.remove("hidden");
+      $("appRoot").classList.add("auth-locked");
+    }
+
+    async function checkAuth() {
+      if (!state.authToken) return false;
+      const response = await apiFetch("/api/auth/me");
+      if (!response.ok) {
+        setLoggedOut();
+        return false;
+      }
+      const data = await response.json();
+      setAuthenticated(data.user);
+      return true;
+    }
+
+    async function loadBackendData() {
+      try {
+        const response = await apiFetch("/api/bootstrap");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        products = data.products.length ? data.products : products;
+        assets = data.assets.length ? data.assets : assets;
+        state.allVersionCount = data.allVersionCount || assets.length;
+        state.records = Object.fromEntries(assets.map((asset) => [asset.file, asset.review || {
+          productId: "dunk-panda",
+          status: "pending",
+          published: false,
+          tags: seedTags(asset),
+          comment: "",
+          updatedAt: ""
+        }]));
+        state.selected = assets[0]?.file || "";
+        state.backendOnline = true;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+        showToast("已连接飞书数据库");
+      } catch (error) {
+        state.backendOnline = false;
+        showToast("未连接后端，使用本地缓存");
+      }
+    }
+
+    async function persistRecord(file) {
+      const record = state.records[file];
+      if (!state.backendOnline || !record?.recordId) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+        return;
+      }
+      const response = await apiFetch(`/api/assets/${encodeURIComponent(record.recordId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: record.status,
+          published: record.published,
+          tags: record.tags,
+          comment: record.comment
+        })
+      });
+      if (!response.ok) throw new Error(`保存飞书失败：${response.status}`);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+    }
+
+    function showToast(message) {
+      const toast = $("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 1500);
+    }
+
+    function formatSize(bytes) {
+      return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function assetSrc(asset) {
+      return asset.url || asset.file;
+    }
+
+    function isImageUrl(src) {
+      return /\.(avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i.test(String(src || ""));
+    }
+
+    function mediaElement(src, className = "", videoAttrs = "controls preload=\"metadata\" playsinline") {
+      if (!src) return "";
+      const classes = ["media-visual", className].filter(Boolean).join(" ");
+      const safeSrc = escapeAttr(src);
+      const safeClass = escapeAttr(classes);
+      if (isImageUrl(src)) {
+        return `<img class="${safeClass}" src="${safeSrc}" alt="" loading="lazy" />`;
+      }
+      return `<video class="${safeClass}" src="${safeSrc}" ${videoAttrs}></video>`;
+    }
+
+    function productCover(product) {
+      const asset = assets.find((item) => state.records[item.file]?.productId === product?.id);
+      return product?.cover || asset?.url || asset?.file || "";
+    }
+
+    function productImages(product) {
+      const raw = Array.isArray(product?.detailImages) ? product.detailImages : [];
+      const images = raw
+        .map((item, index) => typeof item === "string"
+          ? { url: item, title: `商品图 ${index + 1}`, source: "" }
+          : { url: item?.url || item?.u || "", title: item?.title || item?.t || `商品图 ${index + 1}`, source: item?.source || item?.x || "" })
+        .filter((item) => item.url);
+      const cover = productCover(product);
+      if (!images.length && cover) return [{ url: cover, title: "商品封面", source: "商品库" }];
+      return images;
+    }
+
+    function productFeatures(product) {
+      return Array.isArray(product?.features) ? product.features.filter(Boolean) : [];
+    }
+
+    function productSpecs(product) {
+      return product?.specs && typeof product.specs === "object" ? product.specs : {};
+    }
+
+    function formatDate(value) {
+      if (!value) return "暂无时间";
+      const date = new Date(Number(value) || value);
+      if (Number.isNaN(date.getTime())) return "暂无时间";
+      return `${date.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })} ${date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`;
+    }
+
+    function statusLabel(status) {
+      return { pending: "待审核", approved: "审核通过", revision: "建议修改" }[status] || "待审核";
+    }
+
+    function statusClass(status) {
+      return { pending: "pending", approved: "pass", revision: "revise" }[status] || "pending";
+    }
+
+    function getProduct(productId) {
+      return products.find((product) => product.id === productId) || products[0];
+    }
+
+    function getAssetProduct(asset) {
+      return getProduct(state.records[asset.file]?.productId || "dunk-panda");
+    }
+
+    function getFilteredAssets() {
+      const q = state.query.trim().toLowerCase();
+      return assets.filter((asset) => {
+        const record = state.records[asset.file];
+        const product = getAssetProduct(asset);
+        const searchable = [asset.title, asset.file, asset.scene, product.name, product.sku, record.comment, ...record.tags].join(" ").toLowerCase();
+        const matchQuery = !q || searchable.includes(q);
+        const matchProduct = state.productFilter === "all" || record.productId === state.productFilter;
+        return matchQuery && matchProduct;
+      });
+    }
+
+    function renderDashboard() {
+      const total = assets.length;
+      const counts = assets.reduce((acc, asset) => {
+        const record = state.records[asset.file];
+        acc[record.status] += 1;
+        if (record.published) acc.published += 1;
+        return acc;
+      }, { pending: 0, approved: 0, revision: 0, published: 0 });
+
+      const metrics = [
+        ["供给素材量", total, `最新版本素材 · 共 ${state.allVersionCount} 个版本`, "#111"],
+        ["审核通过", counts.approved, `${rate(counts.approved, total)} 通过率`, "var(--green)"],
+        ["已发布", counts.published, `${rate(counts.published, total)} 发布率`, "var(--blue)"],
+        ["需要修改", counts.revision, `${rate(counts.revision, total)} 返修率`, "var(--amber)"],
+        ["待审核", counts.pending, `${rate(counts.pending, total)} 待处理`, "#5f6671"]
+      ];
+
+      $("dashboard").innerHTML = metrics.map(([label, value, sub, color]) => `
+        <article class="metric">
+          <span>${label}</span>
+          <strong>${value}</strong>
+          <small>${sub}</small>
+          <div class="bar"><i style="--w:${Math.max(3, value / total * 100)}%; --c:${color}"></i></div>
+        </article>
+      `).join("");
+    }
+
+    function rate(value, total) {
+      return `${Math.round(value / Math.max(total, 1) * 100)}%`;
+    }
+
+    function getProductStats(productId) {
+      const productAssets = assets.filter((asset) => state.records[asset.file].productId === productId);
+      return productAssets.reduce((acc, asset) => {
+        const record = state.records[asset.file];
+        acc.total += 1;
+        acc[record.status] += 1;
+        if (record.published) acc.published += 1;
+        return acc;
+      }, { total: 0, pending: 0, approved: 0, revision: 0, published: 0 });
+    }
+
+    function renderProducts() {
+      $("productGrid").innerHTML = products.map((product) => {
+        const stats = getProductStats(product.id);
+        const imageCount = productImages(product).length;
+        return `
+          <article class="product-card" data-action="open-product" data-product="${product.id}">
+            <div class="product-hero">
+              <div class="product-thumb">${mediaElement(product.cover, "", "muted preload=\"metadata\" playsinline")}</div>
+              <div>
+                <h3>${escapeHtml(product.name)}</h3>
+                <p>${escapeHtml(product.category)} · ${escapeHtml(product.sku)}${imageCount ? ` · ${imageCount} 张商品图` : ""}</p>
+              </div>
+            </div>
+            <p>${escapeHtml(product.description)}</p>
+            <div class="product-stats">
+              <div class="product-stat"><strong>${stats.total}</strong><span>关联素材</span></div>
+              <div class="product-stat"><strong>${stats.approved}</strong><span>审核通过</span></div>
+              <div class="product-stat"><strong>${stats.revision}</strong><span>需修改</span></div>
+              <div class="product-stat"><strong>${stats.published}</strong><span>已发布</span></div>
+            </div>
+            <button class="btn secondary" data-action="open-product" data-product="${product.id}">查看详情</button>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderProductDetail() {
+      const product = products.find((item) => item.id === state.selectedProductId) || products[0];
+      const images = productImages(product);
+      const current = images[Math.min(state.productGalleryIndex, Math.max(images.length - 1, 0))] || {};
+      const stats = getProductStats(product?.id);
+      const linkedAssets = assets.filter((asset) => state.records[asset.file]?.productId === product?.id);
+      const features = productFeatures(product);
+      const specs = productSpecs(product);
+      $("productDetail").innerHTML = `
+        <button class="btn secondary product-back" data-action="back-products">返回商品库</button>
+        <section class="product-detail-shell">
+          <div class="product-gallery">
+            ${current.url ? `<img class="product-gallery-main" src="${escapeAttr(current.url)}" alt="${escapeAttr(current.title || product.name)}" />` : `<div class="product-gallery-main"></div>`}
+            <div class="product-gallery-strip">
+              ${images.map((image, index) => `
+                <img class="product-gallery-thumb ${index === state.productGalleryIndex ? "active" : ""}" src="${escapeAttr(image.url)}" alt="${escapeAttr(image.title)}" data-action="product-gallery" data-index="${index}" loading="lazy" />
+              `).join("")}
+            </div>
+            <div class="product-gallery-caption">${escapeHtml([current.title, current.source].filter(Boolean).join(" · ") || "暂无商品图")}</div>
+          </div>
+          <div class="product-info-panel">
+            <div class="eyebrow">Product Detail</div>
+            <h3>${escapeHtml(product?.name || "未命名商品")}</h3>
+            <div class="meta">
+              <span>${escapeHtml(product?.owner || "Nike")}</span>
+              <span>${escapeHtml(product?.sku || product?.id || "")}</span>
+              <span>${escapeHtml(product?.category || "")}</span>
+              <span class="pill ${product?.status === "停用" ? "revise" : "pass"}">${escapeHtml(product?.status || "启用")}</span>
+            </div>
+            ${product?.price ? `<div class="product-price">${escapeHtml(product.price)}</div>` : ""}
+            <p class="product-description">${escapeHtml(product?.description || "暂无商品描述。")}</p>
+            ${features.length ? `<ul class="feature-list">${features.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+            ${Object.keys(specs).length ? `
+              <div class="spec-grid">
+                ${Object.entries(specs).map(([key, value]) => `<div><span>${escapeHtml(key)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}
+              </div>
+            ` : ""}
+            <div class="product-stats">
+              <div class="product-stat"><strong>${images.length}</strong><span>商品图</span></div>
+              <div class="product-stat"><strong>${stats.total}</strong><span>创意素材</span></div>
+              <div class="product-stat"><strong>${stats.approved}</strong><span>审核通过</span></div>
+              <div class="product-stat"><strong>${stats.pending}</strong><span>待审核</span></div>
+            </div>
+            <div class="card-actions">
+              <button class="btn" data-action="view-product-assets" data-product="${escapeAttr(product?.id || "")}">查看关联素材</button>
+              ${product?.sourceUrl ? `<a class="btn secondary" href="${escapeAttr(product.sourceUrl)}" target="_blank" rel="noreferrer">打开来源</a>` : `<button class="btn secondary" disabled>暂无来源</button>`}
+            </div>
+          </div>
+        </section>
+        <section class="product-linked-assets">
+          <h3>关联创意素材</h3>
+          ${linkedAssets.length ? `
+            <div class="linked-asset-list">
+              ${linkedAssets.slice(0, 8).map((asset) => `
+                <article class="linked-asset" data-action="open-asset" data-file="${escapeAttr(asset.file)}">
+                  ${mediaElement(assetSrc(asset), "")}
+                  <strong>${escapeHtml(asset.title)}</strong>
+                  <span class="pill ${statusClass(state.records[asset.file].status)}">${statusLabel(state.records[asset.file].status)}</span>
+                </article>
+              `).join("")}
+            </div>
+          ` : `<div class="empty"><h4>暂无关联创意素材</h4><p>商品图已记录在商品库，不计入素材审核队列。</p></div>`}
+        </section>
+      `;
+    }
+
+    function renderRequestForm() {
+      $("requestProduct").innerHTML = products.map((product) => (
+        `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)} · ${escapeHtml(product.sku || product.id)}</option>`
+      )).join("");
+      renderRequestProductPreview();
+      if (!$("requestDueAt").value) {
+        const date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+        $("requestDueAt").value = date.toISOString().slice(0, 10);
+      }
+    }
+
+    function renderRequestProductPreview() {
+      const product = products.find((item) => item.id === $("requestProduct").value) || products[0];
+      const cover = productCover(product);
+      $("requestProductPreview").innerHTML = `
+        <div class="product-preview-media">${mediaElement(cover, "", "muted autoplay loop playsinline preload=\"metadata\"")}</div>
+        <div>
+          <h4>${escapeHtml(product?.name || "请选择商品")}</h4>
+          <p>${escapeHtml([product?.owner, product?.sku, product?.category].filter(Boolean).join(" · ") || "选择商品后，这里会展示商品信息和关联素材封面。")}</p>
+        </div>
+      `;
+    }
+
+    function renderGrid(list) {
+      $("assetGrid").innerHTML = list.map((asset) => {
+        const record = state.records[asset.file];
+        return `
+          <article class="asset-card ${state.selected === asset.file ? "selected" : ""}" data-action="open-asset" data-file="${asset.file}">
+            ${mediaElement(assetSrc(asset), "card-video")}
+            <div class="asset-body">
+              <div class="asset-title">
+                <h3>${escapeHtml(asset.title)}</h3>
+                <span class="pill ${statusClass(record.status)}">${statusLabel(record.status)}</span>
+              </div>
+              <div class="meta">
+                <span>${escapeHtml(getAssetProduct(asset).name)}</span>
+                <span>${escapeHtml(asset.scene)}</span>
+                <span>${escapeHtml(asset.version || record.version || "V1")}</span>
+                <span>${formatSize(asset.size)}</span>
+                <span>更新 ${formatDate(asset.updatedAt || record.updatedAt)}</span>
+                ${record.published ? `<span class="pill published">已发布</span>` : ""}
+              </div>
+              <div class="tags">${record.tags.map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join("")}</div>
+              ${record.comment ? `<div class="comment-preview">修改意见：${escapeHtml(record.comment)}</div>` : ""}
+              <div class="card-actions">
+                <button class="btn secondary" data-action="open-asset" data-file="${asset.file}">详情</button>
+                <a class="btn" href="${assetSrc(asset)}" download>下载</a>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderTable(list) {
+      $("tableBody").innerHTML = list.map((asset) => {
+        const record = state.records[asset.file];
+        return `
+          <tr>
+            <td><strong>${escapeHtml(asset.title)}</strong><br /><span class="meta">${escapeHtml(getAssetProduct(asset).name)} · ${escapeHtml(asset.file)}</span></td>
+            <td><span class="pill">${escapeHtml(asset.version || record.version || "V1")}</span></td>
+            <td><span class="pill ${statusClass(record.status)}">${statusLabel(record.status)}</span></td>
+            <td>${record.published ? `<span class="pill published">已发布</span>` : "未发布"}</td>
+            <td>${record.tags.map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join(" ")}</td>
+            <td>${record.comment ? escapeHtml(record.comment) : "<span class='meta'>暂无</span>"}</td>
+            <td>${formatDate(asset.updatedAt || record.updatedAt)}</td>
+            <td><button class="btn secondary" data-action="open-asset" data-file="${asset.file}">详情</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderDrawer() {
+      const shell = $("drawerShell");
+      shell.classList.toggle("open", state.drawerOpen);
+      shell.setAttribute("aria-hidden", state.drawerOpen ? "false" : "true");
+      if (!state.drawerOpen) return;
+
+      const asset = assets.find((item) => item.file === state.selected) || assets[0];
+      const record = state.records[asset.file];
+      const product = getAssetProduct(asset);
+      const savedNotice = state.lastCompleted ? `
+        <div class="review-saved">
+          <strong>上一条已保存：${escapeHtml(state.lastCompleted.title)} · ${statusLabel(state.lastCompleted.status)}</strong>
+          ${state.lastCompleted.comment ? `修改意见：${escapeHtml(state.lastCompleted.comment)}` : "已记录审核结果，并自动进入下一条素材。"}
+        </div>
+      ` : "";
+      $("drawerTitle").textContent = asset.title;
+      $("drawerSubtitle").textContent = `${product.name} · ${asset.file}`;
+      $("drawerBody").innerHTML = `
+        ${savedNotice}
+        <div class="drawer-video">
+          <div class="phone-frame">
+            <div class="phone-screen">
+              ${mediaElement(assetSrc(asset), "", "controls autoplay preload=\"metadata\" playsinline")}
+              <div class="phone-label"><strong>${escapeHtml(asset.title)}</strong><span>iPhone 13</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="review-form">
+          <div class="drawer-meta">
+            <span class="pill">${escapeHtml(asset.scene)}</span>
+            <span class="pill">${formatSize(asset.size)}</span>
+            <span class="pill">${escapeHtml(asset.version || record.version || "V1")}</span>
+            <span class="pill ${statusClass(record.status)}">${statusLabel(record.status)}</span>
+            <span class="pill">创建 ${formatDate(asset.createdAt || record.createdAt)}</span>
+            <span class="pill">更新 ${formatDate(asset.updatedAt || record.updatedAt)}</span>
+            ${record.published ? `<span class="pill published">已发布</span>` : ""}
+          </div>
+          <label>
+            审核状态
+            <select id="assetStatus">
+              <option value="pending" ${record.status === "pending" ? "selected" : ""}>待审核</option>
+              <option value="approved" ${record.status === "approved" ? "selected" : ""}>审核通过</option>
+              <option value="revision" ${record.status === "revision" ? "selected" : ""}>建议修改</option>
+            </select>
+          </label>
+          <label>
+            素材标签
+            <input id="assetTags" value="${escapeAttr(record.tags.join(", "))}" placeholder="用逗号分隔，如 街头, 可投放" />
+          </label>
+          <label>
+            修改意见
+            <textarea id="assetComment" placeholder="选择“建议修改”时请填写具体修改意见，便于制作团队返修。">${escapeHtml(record.comment)}</textarea>
+          </label>
+          <label class="toggle-row">
+            <span>发布状态</span>
+            <input id="assetPublished" type="checkbox" ${record.published ? "checked" : ""} />
+          </label>
+          <div class="drawer-actions">
+            <button class="btn good" id="quickApprove">审核通过并下一个</button>
+            <button class="btn warn" id="quickRevision">提交修改意见并下一个</button>
+          </div>
+          <a class="btn secondary" href="${assetSrc(asset)}" download>下载当前素材</a>
+        </div>
+      `;
+
+      $("assetStatus").addEventListener("change", (event) => updateRecord({ status: event.target.value }));
+      $("assetTags").addEventListener("change", (event) => updateRecord({ tags: normalizeTags(event.target.value) }));
+      $("assetComment").addEventListener("input", (event) => updateRecord({ comment: event.target.value }, false, false));
+      $("assetComment").addEventListener("blur", () => {
+        save();
+        persistRecord(state.selected).catch(() => showToast("飞书同步失败"));
+        render();
+      });
+      $("assetPublished").addEventListener("change", (event) => updateRecord({ published: event.target.checked }));
+      $("quickApprove").addEventListener("click", () => completeReview({ status: "approved" }));
+      $("quickRevision").addEventListener("click", () => {
+        const comment = $("assetComment").value.trim();
+        if (!comment) {
+          showToast("请先填写修改意见");
+          $("assetComment").focus();
+          return;
+        }
+        completeReview({ status: "revision", comment });
+      });
+    }
+
+    function updateRecord(patch, shouldSave = true, shouldRender = true) {
+      const file = state.selected;
+      const current = state.records[state.selected];
+      state.records[state.selected] = {
+        ...current,
+        ...patch,
+        updatedAt: new Date().toISOString()
+      };
+      if (patch.status === "revision" && !state.records[state.selected].comment.trim()) {
+        showToast("请补充修改意见");
+      }
+      if (shouldSave) {
+        save();
+        persistRecord(file).catch(() => showToast("飞书同步失败"));
+      }
+      if (shouldRender) render();
+    }
+
+    function completeReview(patch) {
+      const completedAsset = assets.find((asset) => asset.file === state.selected);
+      updateRecord(patch, true, false);
+      state.lastCompleted = completedAsset ? {
+        title: completedAsset.title,
+        file: completedAsset.file,
+        status: state.records[completedAsset.file].status,
+        comment: state.records[completedAsset.file].comment
+      } : null;
+      const next = getNextAsset();
+      if (next) {
+        state.selected = next.file;
+        state.drawerOpen = true;
+        showToast("已保存，进入下一个素材");
+      } else {
+        state.drawerOpen = false;
+        showToast("已完成当前列表审核");
+      }
+      render();
+    }
+
+    function getNextAsset() {
+      const list = getFilteredAssets();
+      const index = list.findIndex((asset) => asset.file === state.selected);
+      return list[index + 1] || list.find((asset) => state.records[asset.file].status === "pending" && asset.file !== state.selected) || null;
+    }
+
+    function openDrawer(file) {
+      state.selected = file;
+      state.drawerOpen = true;
+      state.lastCompleted = null;
+      render();
+    }
+
+    function closeDrawer() {
+      state.drawerOpen = false;
+      state.lastCompleted = null;
+      render();
+    }
+
+    function normalizeTags(value) {
+      return [...new Set(value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean))];
+    }
+
+    function render() {
+      const list = getFilteredAssets();
+      renderPageChrome();
+      renderDashboard();
+      renderProducts();
+      renderProductDetail();
+      renderRequestForm();
+      renderGrid(list);
+      renderTable(list);
+      renderDrawer();
+      $("productGrid").style.display = state.view === "products" ? "grid" : "none";
+      $("productDetail").hidden = state.view !== "productDetail";
+      $("requestView").style.display = state.view === "requests" ? "grid" : "none";
+      $("assetGrid").style.display = state.view === "grid" ? "grid" : "none";
+      $("tableView").style.display = state.view === "table" ? "block" : "none";
+      $("emptyState").hidden = state.view === "products" || state.view === "productDetail" || list.length > 0;
+      document.querySelectorAll(".nav button").forEach((button) => {
+        const activeView = state.view === "productDetail" ? "products" : state.view;
+        button.classList.toggle("active", button.dataset.view === activeView);
+      });
+    }
+
+    function renderPageChrome() {
+      const copy = {
+        products: ["Product Library", "商品库", "Manage product lines and see which creative assets are attached to each SKU."],
+        productDetail: ["Product Detail", "商品详情", "View product galleries, selling points, specs, source links, and attached creative assets."],
+        grid: ["Asset Intelligence", "素材库", "Review the latest version of each creative asset, inspect video previews, and sync decisions back to Feishu."],
+        requests: ["Creative Brief Intake", "需求列表", "Submit new creative demands with product context, references, quantity, and delivery expectation."],
+        table: ["Review Ledger", "审核台账", "Audit status, comments, versions, and publishing readiness in one operational ledger."]
+      }[state.view] || ["Navos Creative Hub", "Navos Creative Hub", "A modern command center for AI creative operations."];
+      $("pageEyebrow").textContent = copy[0];
+      $("pageTitle").textContent = copy[1];
+      $("pageSummary").textContent = copy[2];
+      const showAssetControls = state.view === "grid" || state.view === "table";
+      $("dashboard").style.display = showAssetControls ? "grid" : "none";
+      $("filters").style.display = showAssetControls ? "grid" : "none";
+      $("assetToolbar").style.display = showAssetControls ? "flex" : "none";
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/"/g, "&quot;");
+    }
+
+    document.addEventListener("click", (event) => {
+      const productTarget = event.target.closest("[data-action='open-product']");
+      if (productTarget) {
+        state.selectedProductId = productTarget.dataset.product;
+        state.productGalleryIndex = 0;
+        state.view = "productDetail";
+        render();
+        return;
+      }
+
+      const backProducts = event.target.closest("[data-action='back-products']");
+      if (backProducts) {
+        state.view = "products";
+        state.selectedProductId = "";
+        state.productGalleryIndex = 0;
+        render();
+        return;
+      }
+
+      const galleryTarget = event.target.closest("[data-action='product-gallery']");
+      if (galleryTarget) {
+        state.productGalleryIndex = Number(galleryTarget.dataset.index || 0);
+        render();
+        return;
+      }
+
+      const viewProductAssets = event.target.closest("[data-action='view-product-assets']");
+      if (viewProductAssets) {
+        state.productFilter = viewProductAssets.dataset.product || "all";
+        state.view = "grid";
+        render();
+        return;
+      }
+
+      const assetTarget = event.target.closest("[data-action='open-asset']");
+      if (assetTarget && !event.target.closest("a, video, img")) {
+        const file = assetTarget.dataset.file;
+        if (file) openDrawer(file);
+      }
+    });
+
+    $("closeDrawer").addEventListener("click", closeDrawer);
+    $("drawerBackdrop").addEventListener("click", closeDrawer);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && state.drawerOpen) closeDrawer();
+    });
+
+    document.querySelectorAll(".nav button").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.view = button.dataset.view;
+        render();
+      });
+    });
+
+    $("search").addEventListener("input", (event) => {
+      state.query = event.target.value;
+      render();
+    });
+
+    $("resetFilters").addEventListener("click", () => {
+      state.query = "";
+      state.productFilter = "all";
+      $("search").value = "";
+      render();
+    });
+
+    $("exportData").addEventListener("click", () => {
+      const payload = {
+        project: "Navos Creative Hub",
+        exportedAt: new Date().toISOString(),
+        products,
+        assets: assets.map((asset) => ({ ...asset, review: state.records[asset.file] }))
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "navos-creative-hub-review-data.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    $("importData").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const data = JSON.parse(await file.text());
+      const imported = {};
+      (data.assets || []).forEach((item) => {
+        if (item.file && item.review) imported[item.file] = item.review;
+      });
+      state.records = { ...state.records, ...imported };
+      save();
+      render();
+      event.target.value = "";
+    });
+
+    $("requestForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const product = products.find((item) => item.id === $("requestProduct").value);
+      const attachments = [...$("requestAttachments").files].map((file) => `${file.name} (${Math.round(file.size / 1024)} KB)`);
+      try {
+        const response = await apiFetch("/api/requests", {
+          method: "POST",
+          body: JSON.stringify({
+            productId: product?.id || "",
+            productName: product?.name || "",
+            direction: $("requestDirection").value,
+            demo: $("requestDemo").value,
+            quantity: $("requestQuantity").value,
+            dueAt: $("requestDueAt").value,
+            note: $("requestNote").value,
+            attachments
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "提交失败");
+        $("requestForm").reset();
+        renderRequestForm();
+        $("requestSuccessText").textContent = `需求 ${data.requestId || data.recordId} 已提交到飞书，制作团队可以开始排期。`;
+        $("requestSuccessModal").classList.add("show");
+        $("requestSuccessModal").setAttribute("aria-hidden", "false");
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    $("requestProduct").addEventListener("change", renderRequestProductPreview);
+
+    $("closeSuccessModal").addEventListener("click", () => {
+      $("requestSuccessModal").classList.remove("show");
+      $("requestSuccessModal").setAttribute("aria-hidden", "true");
+    });
+
+    document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.authMode = button.dataset.authMode;
+        document.querySelectorAll("[data-auth-mode]").forEach((item) => item.classList.toggle("active", item === button));
+        $("authForm").querySelector("h3").textContent = state.authMode === "login" ? "Sign in" : "Create account";
+        $("authHelp").textContent = state.authMode === "login" ? "Use your work email to enter the creative asset hub." : "Create an internal reviewer account. Passwords are stored as salted hashes.";
+        $("authSubmit").textContent = state.authMode === "login" ? "Enter Hub" : "Create Account";
+        $("authError").textContent = "";
+      });
+    });
+
+    $("authForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      $("authError").textContent = "";
+      $("authSubmit").disabled = true;
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/${state.authMode === "login" ? "login" : "register"}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: $("authEmail").value,
+            password: $("authPassword").value
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "登录失败");
+        setAuthenticated(data.user, data.token);
+        await loadBackendData();
+        render();
+      } catch (error) {
+        $("authError").textContent = error.message;
+      } finally {
+        $("authSubmit").disabled = false;
+      }
+    });
+
+    async function logout() {
+      if (state.authToken) {
+        await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      }
+      setLoggedOut();
+    }
+
+    $("logoutBtn").addEventListener("click", logout);
+    $("sideLogoutBtn").addEventListener("click", logout);
+
+    async function init() {
+      const ok = await checkAuth();
+      if (!ok) return;
+      await loadBackendData();
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
