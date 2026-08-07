@@ -129,18 +129,8 @@
       box-shadow: var(--shadow-soft);
     }
 
-    .side-note {
-      margin-top: auto;
-      padding: 15px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: #57575d;
-      font-size: 12px;
-      line-height: 1.6;
-      background: rgba(255, 255, 255, .62);
-    }
-
     .side-logout {
+      margin-top: auto;
       justify-content: center;
       width: 100%;
     }
@@ -385,37 +375,6 @@
     .request-view {
       display: none;
       gap: 14px;
-    }
-
-    .request-hero {
-      min-height: 190px;
-      padding: 28px 34px;
-      border-radius: 8px;
-      color: var(--ink);
-      background:
-        linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,255,255,.72)),
-        linear-gradient(120deg, rgba(0,113,227,.12), transparent 46%),
-        linear-gradient(315deg, rgba(125,78,255,.16), transparent 42%);
-      border: 1px solid rgba(255,255,255,.96);
-      box-shadow: 0 24px 70px rgba(0,0,0,.08);
-      display: flex;
-      align-items: center;
-    }
-
-    .request-hero h3 {
-      margin: 7px 0 8px;
-      font-size: clamp(34px, 4vw, 56px);
-      line-height: 1;
-      letter-spacing: -.035em;
-      max-width: 760px;
-    }
-
-    .request-hero p {
-      margin: 0;
-      max-width: 780px;
-      color: #5d5d63;
-      line-height: 1.5;
-      font-size: 15px;
     }
 
     .request-form {
@@ -1934,9 +1893,6 @@
         <button data-view="requests">需求列表</button>
         <button data-view="table">审核台账</button>
       </nav>
-      <div class="side-note">
-        Powered by Feishu database. Creative briefs, review states, versions, and delivery notes stay synced for the team.
-      </div>
       <button class="btn secondary side-logout" id="sideLogoutBtn">退出登录</button>
     </aside>
 
@@ -1975,16 +1931,9 @@
           <div class="product-grid" id="productGrid"></div>
           <div class="product-detail" id="productDetail" hidden></div>
           <div class="request-view" id="requestView">
-            <section class="request-hero">
-              <div>
-                <div class="eyebrow">Creative Brief Intake</div>
-                <h3>Submit a new creative demand</h3>
-                <p>Choose the product, define the creative angle, attach references, and set the delivery expectation for the production queue.</p>
-              </div>
-            </section>
             <form class="request-form" id="requestForm">
               <label class="product-combobox" id="requestProductCombo">
-                <span class="label-row">关联商品 <span class="required-mark">*</span></span>
+                <span class="label-row">选择商品 <span class="required-mark">*</span></span>
                 <select class="native-product-select" id="requestProduct" required tabindex="-1"></select>
                 <button class="product-combo-button" id="requestProductButton" type="button" aria-haspopup="listbox" aria-expanded="false"></button>
                 <div class="product-options" id="requestProductOptions" role="listbox"></div>
@@ -2963,7 +2912,7 @@
         products: ["Product Library", "商品库", "Manage product lines and see which creative assets are attached to each SKU."],
         productDetail: ["Product Detail", "商品详情", "View product galleries, selling points, specs, source links, and attached creative assets."],
         grid: ["Asset Intelligence", "素材库", "Review the latest version of each creative asset, inspect video previews, and sync decisions back to Feishu."],
-        requests: ["Creative Brief Intake", "需求列表", "Submit new creative demands with product context, references, quantity, and delivery expectation."],
+        requests: ["Demand Intake", "需求列表", "填写商品、数量和交付要求，提交后进入制作排期。"],
         table: ["Review Ledger", "审核台账", "Audit status, comments, versions, and publishing readiness in one operational ledger."]
       }[state.view] || ["Navos Creative Hub", "Navos Creative Hub", "A modern command center for AI creative operations."];
       $("pageEyebrow").textContent = copy[0];
@@ -3042,7 +2991,7 @@
         $("requestProductCombo").classList.remove("open");
         $("requestProductButton").setAttribute("aria-expanded", "false");
         renderRequestProductPicker();
-        showToast("关联商品已更新");
+        showToast("选择商品已更新");
         return;
       }
 
@@ -3193,12 +3142,12 @@
       const nextOpen = !combo.classList.contains("open");
       combo.classList.toggle("open", nextOpen);
       $("requestProductButton").setAttribute("aria-expanded", nextOpen ? "true" : "false");
-      showToast(nextOpen ? "请选择关联商品" : "已收起商品选择");
+      showToast(nextOpen ? "请选择商品" : "已收起商品选择");
     });
 
     $("requestProduct").addEventListener("change", () => {
       renderRequestProductPicker();
-      showToast("关联商品已更新");
+      showToast("选择商品已更新");
     });
 
     $("closeSuccessModal").addEventListener("click", () => {
