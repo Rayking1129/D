@@ -2291,9 +2291,13 @@
         state.selected = preserveSelection && assets.some((asset) => asset.file === previousSelected)
           ? previousSelected
           : assets[0]?.file || "";
-        state.selectedProductId = preserveSelection && products.some((product) => product.id === previousProductId)
+        const visibleProducts = activeProducts();
+        state.selectedProductId = preserveSelection && visibleProducts.some((product) => product.id === previousProductId)
           ? previousProductId
-          : previousProductId;
+          : visibleProducts[0]?.id || "";
+        if (state.productFilter !== "all" && !visibleProducts.some((product) => product.id === state.productFilter)) {
+          state.productFilter = "all";
+        }
         state.backendOnline = true;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
         if (!silent) showToast("已连接飞书数据库");
@@ -2465,17 +2469,32 @@
       return { pending: "pending", approved: "pass", revision: "revise" }[status] || "pending";
     }
 
+    function isProductActive(product) {
+      const status = String(product?.status || "启用").trim().toLowerCase();
+      return !["禁用", "停用", "disabled", "inactive", "off"].includes(status);
+    }
+
+    function activeProducts() {
+      return products.filter(isProductActive);
+    }
+
+    function visibleAssets() {
+      return assets.filter((asset) => isProductActive(getAssetProduct(asset)));
+    }
+
     function getProduct(productId) {
-      return products.find((product) => product.id === productId) || products[0];
+      const visibleProducts = activeProducts();
+      return visibleProducts.find((product) => product.id === productId) || visibleProducts[0] || products[0];
     }
 
     function getAssetProduct(asset) {
-      return getProduct(state.records[asset.file]?.productId || "dunk-panda");
+      const productId = state.records[asset.file]?.productId || "dunk-panda";
+      return products.find((product) => product.id === productId) || getProduct(productId);
     }
 
     function getFilteredAssets() {
       const q = state.query.trim().toLowerCase();
-      return assets.filter((asset) => {
+      return visibleAssets().filter((asset) => {
         const record = state.records[asset.file];
         const product = getAssetProduct(asset);
         const searchable = [asset.title, asset.file, asset.scene, product.name, product.sku, record.comment, ...record.tags].join(" ").toLowerCase();
@@ -2492,8 +2511,10 @@
     }
 
     function renderDashboard() {
-      const total = assets.length;
-      const counts = assets.reduce((acc, asset) => {
+      const displayAssets = visibleAssets();
+      const total = displayAssets.length;
+      const displayVersionCount = displayAssets.reduce((sum, asset) => sum + Math.max(1, getAssetVersions(asset).length), 0);
+      const counts = displayAssets.reduce((acc, asset) => {
         const record = state.records[asset.file];
         acc[record.status] += 1;
         if (record.published) acc.published += 1;
@@ -2501,7 +2522,7 @@
       }, { pending: 0, approved: 0, revision: 0, published: 0 });
 
       const metrics = [
-        ["供给素材量", total, `最新版本素材 · 共 ${state.allVersionCount} 个版本`, "#111"],
+        ["供给素材量", total, `最新版本素材 · 共 ${displayVersionCount} 个版本`, "#111"],
         ["审核通过", counts.approved, `${rate(counts.approved, total)} 通过率`, "var(--green)"],
         ["已发布", counts.published, `${rate(counts.published, total)} 发布率`, "var(--blue)"],
         ["需要修改", counts.revision, `${rate(counts.revision, total)} 返修率`, "var(--amber)"],
@@ -2523,7 +2544,7 @@
     }
 
     function getProductStats(productId) {
-      const productAssets = assets.filter((asset) => state.records[asset.file].productId === productId);
+      const productAssets = visibleAssets().filter((asset) => state.records[asset.file].productId === productId);
       return productAssets.reduce((acc, asset) => {
         const record = state.records[asset.file];
         acc.total += 1;
@@ -2534,7 +2555,7 @@
     }
 
     function renderProducts() {
-      $("productGrid").innerHTML = products.map((product) => {
+      $("productGrid").innerHTML = activeProducts().map((product) => {
         const stats = getProductStats(product.id);
         const imageCount = productImages(product).length;
         return `
@@ -2560,7 +2581,11 @@
     }
 
     function renderProductDetail() {
-      const product = products.find((item) => item.id === state.selectedProductId) || products[0];
+      const product = activeProducts().find((item) => item.id === state.selectedProductId) || activeProducts()[0];
+      if (!product) {
+        $("productDetail").innerHTML = `<div class="empty"><h4>暂无启用商品</h4><p>请在飞书商品库启用商品后再查看详情。</p></div>`;
+        return;
+      }
       const images = productImages(product);
       const current = images[Math.min(state.productGalleryIndex, Math.max(images.length - 1, 0))] || {};
       const stats = getProductStats(product?.id);
@@ -2626,9 +2651,13 @@
     }
 
     function renderRequestForm() {
-      $("requestProduct").innerHTML = products.map((product) => (
+      const visibleProducts = activeProducts();
+      $("requestProduct").innerHTML = visibleProducts.map((product) => (
         `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)} · ${escapeHtml(product.sku || product.id)}</option>`
       )).join("");
+      if (!visibleProducts.some((product) => product.id === $("requestProduct").value)) {
+        $("requestProduct").value = visibleProducts[0]?.id || "";
+      }
       renderRequestProductPicker();
       if (!$("requestDueAt").value) {
         const date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
@@ -2638,9 +2667,10 @@
     }
 
     function renderRequestProductPicker() {
-      const product = products.find((item) => item.id === $("requestProduct").value) || products[0];
+      const visibleProducts = activeProducts();
+      const product = visibleProducts.find((item) => item.id === $("requestProduct").value) || visibleProducts[0];
       $("requestProductButton").innerHTML = productOptionMarkup(product, true);
-      $("requestProductOptions").innerHTML = products.map((item) => `
+      $("requestProductOptions").innerHTML = visibleProducts.map((item) => `
         <button class="product-option ${item.id === product?.id ? "active" : ""}" type="button" data-action="request-product-option" data-product="${escapeAttr(item.id)}" role="option" aria-selected="${item.id === product?.id ? "true" : "false"}">
           ${productOptionMarkup(item, false)}
         </button>
@@ -3005,6 +3035,7 @@
     document.addEventListener("click", (event) => {
       const productTarget = event.target.closest("[data-action='open-product']");
       if (productTarget) {
+        if (!activeProducts().some((product) => product.id === productTarget.dataset.product)) return;
         state.selectedProductId = productTarget.dataset.product;
         state.productGalleryIndex = 0;
         state.view = "productDetail";
@@ -3036,7 +3067,8 @@
 
       const viewProductAssets = event.target.closest("[data-action='view-product-assets']");
       if (viewProductAssets) {
-        state.productFilter = viewProductAssets.dataset.product || "all";
+        const nextFilter = viewProductAssets.dataset.product || "all";
+        state.productFilter = activeProducts().some((product) => product.id === nextFilter) ? nextFilter : "all";
         state.view = "grid";
         render();
         showToast("已筛选该商品的关联素材");
@@ -3095,7 +3127,7 @@
 
     $("requestForm").addEventListener("submit", async (event) => {
       event.preventDefault();
-      const product = products.find((item) => item.id === $("requestProduct").value);
+      const product = activeProducts().find((item) => item.id === $("requestProduct").value);
       const attachments = [...$("requestAttachments").files].map((file) => `${file.name} (${Math.round(file.size / 1024)} KB)`);
       const submitButton = $("requestForm").querySelector("button[type='submit']");
       submitButton.disabled = true;
