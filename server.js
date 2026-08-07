@@ -368,6 +368,8 @@ function normalizeAsset(record, productByRecordId) {
     mediaType: mediaTypeFor(url || file),
     createdAt: fields["创建时间"] || "",
     updatedAt: fields["更新时间"] || "",
+    reviewer: fields["审核人"] || "",
+    reviewedAt: fields["审核时间"] || "",
     review: {
       recordId: record.record_id,
       assetId,
@@ -379,7 +381,9 @@ function normalizeAsset(record, productByRecordId) {
       tags: Array.isArray(fields["素材标签"]) ? fields["素材标签"] : [],
       comment: fields["修改意见"] || "",
       createdAt: fields["创建时间"] || "",
-      updatedAt: fields["更新时间"] || ""
+      updatedAt: fields["更新时间"] || "",
+      reviewer: fields["审核人"] || "",
+      reviewedAt: fields["审核时间"] || ""
     }
   };
 }
@@ -444,30 +448,57 @@ async function getBootstrap() {
     .filter((asset) => asset.review.productId)
     .map((asset) => ({ ...asset, url: fileUrl(asset.url || asset.file) }));
   const latestByAssetId = new Map();
+  const versionsByAssetId = new Map();
   for (const asset of allAssets) {
+    const versions = versionsByAssetId.get(asset.assetId) || [];
+    versions.push(asset);
+    versionsByAssetId.set(asset.assetId, versions);
     const current = latestByAssetId.get(asset.assetId);
     if (!current || asset.versionNumber > current.versionNumber || (asset.versionNumber === current.versionNumber && String(asset.updatedAt) > String(current.updatedAt))) {
       latestByAssetId.set(asset.assetId, asset);
     }
   }
-  const assets = [...latestByAssetId.values()].sort((a, b) => a.title.localeCompare(b.title));
+  for (const versions of versionsByAssetId.values()) {
+    versions.sort((a, b) => a.versionNumber - b.versionNumber || String(a.createdAt).localeCompare(String(b.createdAt)));
+  }
+  const assets = [...latestByAssetId.values()]
+    .map((asset) => ({ ...asset, versionHistory: versionsByAssetId.get(asset.assetId) || [asset] }))
+    .sort((a, b) => a.title.localeCompare(b.title));
   return { products, assets, allVersionCount: allAssets.length };
 }
 
-async function updateAsset(recordId, patch) {
+async function updateAsset(user, recordId, patch) {
   const token = await getTenantToken();
   const appToken = await getAppToken();
   const fields = {};
+  const now = Date.now();
   if (patch.status) fields["审核状态"] = codeToStatus(patch.status);
   if (typeof patch.published === "boolean") fields["发布状态"] = patch.published;
   if (Array.isArray(patch.tags)) fields["素材标签"] = patch.tags;
   if (typeof patch.comment === "string") fields["修改意见"] = patch.comment;
-  fields["更新时间"] = Date.now();
-  return feishu(`/bitable/v1/apps/${appToken}/tables/${CONFIG.assetTableId}/records/${recordId}`, {
-    method: "PUT",
-    headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ fields })
-  });
+  if (patch.status) {
+    fields["审核人"] = patch.reviewer || user.email;
+    fields["审核时间"] = patch.reviewedAt ? new Date(patch.reviewedAt).getTime() : now;
+  }
+  fields["更新时间"] = now;
+  const requestPath = `/bitable/v1/apps/${appToken}/tables/${CONFIG.assetTableId}/records/${recordId}`;
+  try {
+    return await feishu(requestPath, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ fields })
+    });
+  } catch (error) {
+    if (!("审核人" in fields || "审核时间" in fields)) throw error;
+    const compatibleFields = { ...fields };
+    delete compatibleFields["审核人"];
+    delete compatibleFields["审核时间"];
+    return feishu(requestPath, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ fields: compatibleFields })
+    });
+  }
 }
 
 async function createRequest(user, payload) {
@@ -538,9 +569,9 @@ async function handleApi(req, res, url) {
     }
     const match = url.pathname.match(/^\/api\/assets\/([^/]+)$/);
     if (req.method === "PUT" && match) {
-      requireAuth(req);
+      const user = requireAuth(req);
       const body = await readBody(req);
-      await updateAsset(decodeURIComponent(match[1]), body);
+      await updateAsset(user, decodeURIComponent(match[1]), body);
       return json(res, 200, { ok: true });
     }
     json(res, 404, { error: "api_not_found" });

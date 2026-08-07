@@ -986,7 +986,7 @@
       top: 18px;
       right: 18px;
       bottom: 18px;
-      width: min(900px, calc(100vw - 36px));
+      width: min(1180px, calc(100vw - 36px));
       background: rgba(255, 255, 255, .94);
       border: 1px solid rgba(255, 255, 255, .96);
       border-radius: 8px;
@@ -1042,7 +1042,7 @@
       overflow: auto;
       padding: 18px 24px 22px;
       display: grid;
-      grid-template-columns: 330px minmax(0, 1fr);
+      grid-template-columns: minmax(330px, 420px) minmax(0, 1fr);
       gap: 22px;
       align-items: start;
     }
@@ -1068,9 +1068,10 @@
       display: grid;
       gap: 12px;
       padding: 16px;
-      background: rgba(245, 245, 247, .72);
+      background: linear-gradient(180deg, rgba(255, 255, 255, .88), rgba(245, 245, 247, .78));
       border: 1px solid rgba(0, 0, 0, .06);
       border-radius: 8px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, .06);
     }
 
     .drawer-meta {
@@ -1106,6 +1107,149 @@
       justify-content: center;
       min-height: 44px;
       font-size: 14px;
+    }
+
+    .latest-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid var(--line);
+    }
+
+    .latest-summary div {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .latest-summary strong {
+      color: var(--ink);
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    .version-ledger {
+      grid-column: 1 / -1;
+      padding: 18px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid rgba(255, 255, 255, .95);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .version-ledger-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-end;
+      margin-bottom: 14px;
+    }
+
+    .version-ledger h4 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -.01em;
+    }
+
+    .version-ledger p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .version-timeline {
+      display: grid;
+      gap: 12px;
+    }
+
+    .version-item {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr);
+      gap: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f7f7f9;
+      border: 1px solid rgba(0, 0, 0, .06);
+    }
+
+    .version-item.active {
+      background: linear-gradient(180deg, #ffffff, #f4f8ff);
+      border-color: rgba(0, 113, 227, .28);
+      box-shadow: 0 12px 34px rgba(0, 113, 227, .10);
+    }
+
+    .version-thumb {
+      min-height: 96px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #08080a;
+    }
+
+    .version-thumb .media-visual {
+      width: 100%;
+      height: 100%;
+      min-height: 96px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .version-copy {
+      min-width: 0;
+      display: grid;
+      gap: 9px;
+    }
+
+    .version-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .version-title-row strong {
+      font-size: 15px;
+      overflow-wrap: anywhere;
+    }
+
+    .version-audit-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .version-audit-grid div {
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid rgba(0, 0, 0, .04);
+      display: grid;
+      gap: 3px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .version-audit-grid strong {
+      color: var(--ink);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .version-comment {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: #3a3a3d;
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
     }
 
     .review-panel {
@@ -1422,6 +1566,7 @@
       .product-detail-shell { grid-template-columns: 1fr; }
       .drawer-body { grid-template-columns: 300px minmax(0, 1fr); }
       .drawer-video .phone-frame { width: min(285px, 72vw); }
+      .version-audit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     @media (max-width: 760px) {
@@ -1446,6 +1591,8 @@
         width: auto;
       }
       .drawer-body { grid-template-columns: 1fr; }
+      .latest-summary, .version-audit-grid { grid-template-columns: 1fr; }
+      .version-item { grid-template-columns: 1fr; }
       .product-stats, .drawer-actions { grid-template-columns: 1fr 1fr; }
       .spec-grid { grid-template-columns: 1fr; }
       .linked-asset-list { grid-template-columns: 1fr 1fr; }
@@ -1723,7 +1870,9 @@
         published: false,
         tags: seedTags(asset),
         comment: "",
-        updatedAt: ""
+        updatedAt: "",
+        reviewer: "",
+        reviewedAt: ""
       }]));
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
@@ -1807,7 +1956,9 @@
           published: false,
           tags: seedTags(asset),
           comment: "",
-          updatedAt: ""
+          updatedAt: "",
+          reviewer: "",
+          reviewedAt: ""
         }]));
         state.selected = assets[0]?.file || "";
         state.backendOnline = true;
@@ -1832,7 +1983,9 @@
           status: record.status,
           published: record.published,
           tags: record.tags,
-          comment: record.comment
+          comment: record.comment,
+          reviewer: record.reviewer,
+          reviewedAt: record.reviewedAt
         })
       });
       if (!response.ok) throw new Error(`保存飞书失败：${response.status}`);
@@ -1853,6 +2006,24 @@
 
     function assetSrc(asset) {
       return asset.url || asset.file;
+    }
+
+    function getAssetVersions(asset) {
+      const versions = Array.isArray(asset?.versionHistory) && asset.versionHistory.length ? asset.versionHistory : [asset];
+      return [...versions].sort((a, b) => versionNumber(a.version || a.review?.version) - versionNumber(b.version || b.review?.version));
+    }
+
+    function versionNumber(version) {
+      const match = String(version || "V1").match(/\d+/);
+      return match ? Number(match[0]) : 1;
+    }
+
+    function versionReviewer(version) {
+      return version?.review?.reviewer || version?.reviewer || "暂无记录";
+    }
+
+    function versionReviewedAt(version) {
+      return version?.review?.reviewedAt || version?.review?.updatedAt || version?.review?.createdAt || version?.reviewedAt || version?.updatedAt || version?.createdAt || "";
     }
 
     function isImageUrl(src) {
@@ -2145,6 +2316,9 @@
       const asset = assets.find((item) => item.file === state.selected) || assets[0];
       const record = state.records[asset.file];
       const product = getAssetProduct(asset);
+      const versions = getAssetVersions(asset);
+      const latestVersionLabel = asset.version || record.version || "V1";
+      const latestAuditTime = record.reviewedAt || asset.reviewedAt || asset.updatedAt || record.updatedAt;
       const savedNotice = state.lastCompleted ? `
         <div class="review-saved">
           <strong>上一条已保存：${escapeHtml(state.lastCompleted.title)} · ${statusLabel(state.lastCompleted.status)}</strong>
@@ -2152,10 +2326,10 @@
         </div>
       ` : "";
       $("drawerTitle").textContent = asset.title;
-      $("drawerSubtitle").textContent = `${product.name} · ${asset.file}`;
+      $("drawerSubtitle").textContent = `${product.name} · 素材ID ${asset.assetId || asset.file} · 当前 ${latestVersionLabel}`;
       $("drawerBody").innerHTML = `
-        ${savedNotice}
         <div class="drawer-video">
+          ${savedNotice}
           <div class="phone-frame">
             <div class="phone-screen">
               ${mediaElement(assetSrc(asset), "", "controls autoplay preload=\"metadata\" playsinline")}
@@ -2164,10 +2338,16 @@
           </div>
         </div>
         <div class="review-form">
+          <div class="latest-summary">
+            <div><span>素材ID</span><strong>${escapeHtml(asset.assetId || asset.file)}</strong></div>
+            <div><span>最新版本</span><strong>${escapeHtml(latestVersionLabel)}</strong></div>
+            <div><span>当前审核人</span><strong>${escapeHtml(record.reviewer || "待分配")}</strong></div>
+            <div><span>审核时间</span><strong>${formatDate(latestAuditTime)}</strong></div>
+          </div>
           <div class="drawer-meta">
             <span class="pill">${escapeHtml(asset.scene)}</span>
             <span class="pill">${formatSize(asset.size)}</span>
-            <span class="pill">${escapeHtml(asset.version || record.version || "V1")}</span>
+            <span class="pill">${escapeHtml(latestVersionLabel)}</span>
             <span class="pill ${statusClass(record.status)}">${statusLabel(record.status)}</span>
             <span class="pill">创建 ${formatDate(asset.createdAt || record.createdAt)}</span>
             <span class="pill">更新 ${formatDate(asset.updatedAt || record.updatedAt)}</span>
@@ -2199,6 +2379,48 @@
           </div>
           <a class="btn secondary" href="${assetSrc(asset)}" download>下载当前素材</a>
         </div>
+        <section class="version-ledger">
+          <div class="version-ledger-head">
+            <div>
+              <h4>版本记录</h4>
+              <p>同一个素材ID下按版本号归档，列表始终展示最新版本。</p>
+            </div>
+            <span class="pill">${versions.length} 个版本</span>
+          </div>
+          <div class="version-timeline">
+            ${versions.map((version) => {
+              const versionReview = version.review || {};
+              const isActive = version.file === asset.file || version.recordId === record.recordId;
+              const comment = versionReview.comment || "暂无修改建议或审核备注。";
+              return `
+                <article class="version-item ${isActive ? "active" : ""}">
+                  <div class="version-thumb">${mediaElement(assetSrc(version), "", "muted preload=\"metadata\" playsinline")}</div>
+                  <div class="version-copy">
+                    <div class="version-title-row">
+                      <strong>${escapeHtml(version.title || version.file)}</strong>
+                      <span class="pill ${isActive ? "published" : ""}">${escapeHtml(version.version || versionReview.version || "V1")}${isActive ? " · 最新版" : ""}</span>
+                    </div>
+                    <div class="version-audit-grid">
+                      <div><span>审核状态</span><strong>${statusLabel(versionReview.status)}</strong></div>
+                      <div><span>审核人</span><strong>${escapeHtml(versionReviewer(version))}</strong></div>
+                      <div><span>审核时间</span><strong>${formatDate(versionReviewedAt(version))}</strong></div>
+                      <div><span>发布状态</span><strong>${versionReview.published ? "已发布" : "未发布"}</strong></div>
+                    </div>
+                    <div class="version-comment">
+                      ${versionReview.status === "revision" ? "修改建议：" : "审核备注："}${escapeHtml(comment)}
+                    </div>
+                    <div class="meta">
+                      <span>${escapeHtml(version.file)}</span>
+                      <span>${formatSize(version.size || 0)}</span>
+                      <span>创建 ${formatDate(version.createdAt || versionReview.createdAt)}</span>
+                      <span>更新 ${formatDate(version.updatedAt || versionReview.updatedAt)}</span>
+                    </div>
+                  </div>
+                </article>
+              `;
+            }).join("")}
+          </div>
+        </section>
       `;
 
       $("assetStatus").addEventListener("change", (event) => updateRecord({ status: event.target.value }));
@@ -2239,10 +2461,16 @@
     function updateRecord(patch, shouldSave = true, shouldRender = true, message) {
       const file = state.selected;
       const current = state.records[state.selected];
+      const now = new Date().toISOString();
+      const auditPatch = patch.status ? {
+        reviewer: state.currentUser?.email || current.reviewer || "当前用户",
+        reviewedAt: now
+      } : {};
       state.records[state.selected] = {
         ...current,
         ...patch,
-        updatedAt: new Date().toISOString()
+        ...auditPatch,
+        updatedAt: now
       };
       if (patch.status === "revision" && !state.records[state.selected].comment.trim()) {
         showToast("请补充修改意见");
