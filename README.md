@@ -1,6 +1,6 @@
-# Navos Creative Hub
+# Navos 创意素材 Hub
 
-Navos Creative Hub is a lightweight creative asset management system for product-linked AI content review, version tracking, demand intake, and Feishu Bitable-backed operations.
+Navos 创意素材 Hub is a lightweight creative asset management system for product-linked AI content review, version tracking, demand intake, and Feishu Bitable-backed operations.
 
 ## Features
 

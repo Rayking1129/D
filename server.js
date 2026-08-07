@@ -21,6 +21,7 @@ const CONFIG = {
 
 let tenantTokenCache = null;
 let appTokenCache = null;
+let userRecordsCache = null;
 const sessions = new Map();
 
 function loadLocalEnv() {
@@ -214,9 +215,26 @@ function publicUser(record) {
 }
 
 async function findUserByEmail(email) {
-  const users = await listRecords(CONFIG.userTableId);
+  const users = await listUserRecords();
   const normalized = normalizeEmail(email);
   return users.find((record) => normalizeEmail(record.fields?.["邮箱"]) === normalized) || null;
+}
+
+async function listUserRecords() {
+  const now = Date.now();
+  if (userRecordsCache && userRecordsCache.expiresAt > now) {
+    return userRecordsCache.records;
+  }
+  const records = await listRecords(CONFIG.userTableId);
+  userRecordsCache = {
+    records,
+    expiresAt: now + 60 * 1000
+  };
+  return records;
+}
+
+function invalidateUserRecordsCache() {
+  userRecordsCache = null;
 }
 
 async function createUser({ email, password, name, role = "reviewer" }) {
@@ -247,6 +265,7 @@ async function createUser({ email, password, name, role = "reviewer" }) {
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ fields })
   });
+  invalidateUserRecordsCache();
   return publicUser(data.data.record);
 }
 
@@ -260,7 +279,7 @@ async function loginUser({ email, password }) {
   const actual = passwordHash(String(password || ""), salt || "");
   const ok = expected && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(actual));
   if (!ok) throw new Error("邮箱或密码不正确");
-  await touchLastLogin(user.record_id);
+  touchLastLogin(user.record_id).catch(() => {});
   return publicUser(user);
 }
 
@@ -478,11 +497,13 @@ function fileUrl(file) {
 }
 
 async function getBootstrap() {
-  const productRecords = await listRecords(CONFIG.productTableId);
+  const [productRecords, assetRecords] = await Promise.all([
+    listRecords(CONFIG.productTableId),
+    listRecords(CONFIG.assetTableId)
+  ]);
   const products = productRecords.map(normalizeProduct);
   products.forEach((product) => { product.cover = fileUrl(product.cover); });
   const productByRecordId = new Map(products.map((product) => [product.recordId, product]));
-  const assetRecords = await listRecords(CONFIG.assetTableId);
   const allAssets = assetRecords
     .map((record) => normalizeAsset(record, productByRecordId))
     .filter((asset) => asset.review.productId)
@@ -633,7 +654,7 @@ function requestHandler(req, res) {
 if (require.main === module) {
   const server = http.createServer(requestHandler);
   server.listen(PORT, () => {
-    console.log(`Creative Asset Hub running at http://localhost:${PORT}`);
+    console.log(`Navos Creative Asset Hub running at http://localhost:${PORT}`);
   });
 }
 

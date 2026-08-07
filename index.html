@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nike Dunk Panda AI 创意素材管理系统</title>
+  <title>Navos 创意素材 Hub</title>
   <style>
     :root {
       --bg: #f5f5f7;
@@ -1891,7 +1891,7 @@
     <div class="login-visual">
       <div class="login-logo"><img src="assets/navos-logo.jpg" alt="Navos" /></div>
       <div class="login-copy">
-        <h2>Creative control for high-velocity drops.</h2>
+        <h2>Navos 创意素材 Hub</h2>
         <p>Review AI video assets, route revision notes, and keep every product launch moving from one cinematic command center.</p>
       </div>
       <div class="login-stats">
@@ -1924,7 +1924,7 @@
       <div class="brand">
         <div class="brand-mark"><img src="assets/navos-logo.jpg" alt="Navos" /></div>
         <div>
-          <h1>Navos<br />Creative Hub</h1>
+          <h1>Navos<br />创意素材 Hub</h1>
           <p>AI 内容创意素材管理</p>
         </div>
       </div>
@@ -1941,7 +1941,7 @@
       <section class="topbar">
         <div>
           <div class="eyebrow" id="pageEyebrow">Navos Creative Hub</div>
-          <h2 id="pageTitle">Navos Creative Hub</h2>
+          <h2 id="pageTitle">Navos 创意素材 Hub</h2>
           <p class="summary" id="pageSummary">A modern command center for AI creative requests, product-linked assets, version review, and delivery operations.</p>
         </div>
         <div class="top-actions">
@@ -2146,6 +2146,7 @@
     };
 
     let backendRefreshTimer = null;
+    let backendPreloadPromise = null;
 
     const $ = (id) => document.getElementById(id);
 
@@ -2250,8 +2251,22 @@
     async function refreshBackendData({ force = false } = {}) {
       if (!state.authToken) return;
       if (!force && shouldSkipSilentRefresh()) return;
-      await loadBackendData({ silent: true, preserveSelection: true });
+      await preloadBackendData({ preserveSelection: true });
       render();
+    }
+
+    function preloadBackendData(options = {}) {
+      if (!state.authToken) return Promise.resolve();
+      if (!backendPreloadPromise) {
+        backendPreloadPromise = loadBackendData({
+          silent: true,
+          preserveSelection: true,
+          ...options
+        }).finally(() => {
+          backendPreloadPromise = null;
+        });
+      }
+      return backendPreloadPromise;
     }
 
     function startBackendAutoRefresh() {
@@ -3009,7 +3024,7 @@
         grid: ["Asset Intelligence", "素材库", "Review the latest version of each creative asset, inspect video previews, and sync decisions back to Feishu."],
         requests: ["Demand Intake", "需求列表", "填写商品、数量和交付要求，提交后进入制作排期。"],
         table: ["Review Ledger", "审核台账", "Audit status, comments, versions, and publishing readiness in one operational ledger."]
-      }[state.view] || ["Navos Creative Hub", "Navos Creative Hub", "A modern command center for AI creative operations."];
+      }[state.view] || ["Navos Creative Hub", "Navos 创意素材 Hub", "A modern command center for AI creative operations."];
       $("pageEyebrow").textContent = copy[0];
       $("pageTitle").textContent = copy[1];
       $("pageSummary").textContent = copy[2];
@@ -3238,7 +3253,8 @@
           }
         );
         setAuthenticated(data.user, data.token);
-        await loadBackendData({ silent: true });
+        render();
+        await preloadBackendData({ preserveSelection: true });
         render();
         showToast(isLogin ? "登录成功，欢迎回来" : "注册成功，已进入系统");
       } catch (error) {
@@ -3281,9 +3297,10 @@
     });
 
     async function init() {
+      const preload = state.authToken ? preloadBackendData({ preserveSelection: true }) : Promise.resolve();
       const ok = await checkAuth();
       if (!ok) return;
-      await loadBackendData({ silent: true });
+      await preload;
       render();
       showToast("已保持登录状态");
     }
