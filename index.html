@@ -182,8 +182,9 @@
     }
 
     .top-actions {
-      display: grid;
+      display: flex;
       justify-items: end;
+      justify-content: flex-end;
       gap: 12px;
     }
 
@@ -1844,7 +1845,7 @@
       main { padding: 16px; }
       .topbar { display: grid; }
       .top-actions { justify-items: start; }
-      .toolbar { justify-content: flex-start; }
+      .top-actions { justify-content: flex-start; }
       .dashboard, .filters { grid-template-columns: 1fr; }
       h2 { font-size: 23px; }
       .request-form { grid-template-columns: 1fr; }
@@ -1928,13 +1929,6 @@
           <div class="user-chip" id="userChip">
             <span class="user-avatar" id="userAvatar">N</span>
             <span id="userName">Navos User</span>
-          </div>
-          <div class="toolbar" id="assetToolbar">
-            <button class="btn secondary" id="resetFilters">清空筛选</button>
-            <button class="btn secondary" id="exportData">导出审核数据</button>
-            <label class="btn secondary" for="importData">导入数据</label>
-            <button class="btn secondary" id="logoutBtn">退出登录</button>
-            <input id="importData" type="file" accept="application/json" hidden />
           </div>
         </div>
       </section>
@@ -2939,7 +2933,6 @@
       const showAssetControls = state.view === "grid" || state.view === "table";
       $("dashboard").style.display = showAssetControls ? "grid" : "none";
       $("filters").style.display = showAssetControls ? "grid" : "none";
-      $("assetToolbar").style.display = showAssetControls ? "flex" : "none";
     }
 
     function escapeHtml(value) {
@@ -3039,74 +3032,6 @@
     $("search").addEventListener("input", (event) => {
       state.query = event.target.value;
       render();
-    });
-
-    $("resetFilters").addEventListener("click", () => {
-      state.query = "";
-      state.productFilter = "all";
-      $("search").value = "";
-      render();
-      showToast("筛选条件已清空");
-    });
-
-    $("exportData").addEventListener("click", () => {
-      showActionModal({
-        type: "loading",
-        title: "正在导出审核数据",
-        message: "系统正在生成 JSON 文件，请稍候。"
-      });
-      const payload = {
-        project: "Navos Creative Hub",
-        exportedAt: new Date().toISOString(),
-        products,
-        assets: assets.map((asset) => ({ ...asset, review: state.records[asset.file] }))
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "navos-creative-hub-review-data.json";
-      link.click();
-      URL.revokeObjectURL(url);
-      showActionModal({
-        type: "success",
-        title: "审核数据已导出",
-        message: "JSON 文件已生成，可以用于后续备份或迁移。",
-        autoClose: 1400
-      });
-      showToast("审核数据已导出");
-    });
-
-    $("importData").addEventListener("change", async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-      try {
-        await runWithFeedback(
-          async () => {
-            const data = JSON.parse(await file.text());
-            const imported = {};
-            (data.assets || []).forEach((item) => {
-              if (item.file && item.review) imported[item.file] = item.review;
-            });
-            state.records = { ...state.records, ...imported };
-            save("");
-            render();
-            return imported;
-          },
-          {
-            loadingTitle: "正在导入数据",
-            loadingMessage: "系统正在解析文件并合并审核记录。",
-            successTitle: "导入数据已合并",
-            successMessage: "本地审核记录已更新。",
-            errorTitle: "导入失败",
-            autoClose: 1400
-          }
-        );
-      } catch (error) {
-        showToast(error.message);
-      } finally {
-        event.target.value = "";
-      }
     });
 
     $("requestForm").addEventListener("submit", async (event) => {
@@ -3256,7 +3181,6 @@
       }
     }
 
-    $("logoutBtn").addEventListener("click", logout);
     $("sideLogoutBtn").addEventListener("click", logout);
 
     async function init() {
