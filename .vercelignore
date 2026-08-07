@@ -1,0 +1,5 @@
+.env.local
+*.mp4
+tools/
+node_modules/
+.git/
