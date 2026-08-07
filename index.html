@@ -2207,7 +2207,7 @@
         ...(options.headers || {})
       };
       if (state.authToken) headers.Authorization = `Bearer ${state.authToken}`;
-      if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+      if (options.body && !(options.body instanceof FormData) && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
       return fetch(`${API_BASE}${path}`, { ...options, headers });
     }
 
@@ -3153,15 +3153,29 @@
       render();
     });
 
+    async function uploadRequestAttachments(files) {
+      if (!files.length) return [];
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file, file.name));
+      const response = await apiFetch("/api/uploads", {
+        method: "POST",
+        body: formData
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "附件上传失败");
+      return (result.uploads || []).map((item) => `${item.name}: ${item.url}`);
+    }
+
     $("requestForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       const product = activeProducts().find((item) => item.id === $("requestProduct").value);
-      const attachments = [...$("requestAttachments").files].map((file) => `${file.name} (${Math.round(file.size / 1024)} KB)`);
+      const attachmentFiles = [...$("requestAttachments").files];
       const submitButton = $("requestForm").querySelector("button[type='submit']");
       submitButton.disabled = true;
       try {
         const data = await runWithFeedback(
           async () => {
+            const attachments = await uploadRequestAttachments(attachmentFiles);
             const response = await apiFetch("/api/requests", {
               method: "POST",
               body: JSON.stringify({

@@ -19,6 +19,12 @@ const CONFIG = {
   requestTableId: process.env.FEISHU_REQUEST_TABLE_ID
 };
 
+const OSS_CONFIG = {
+  uploadUrl: process.env.OSS_UPLOAD_URL || "https://app.navosagent.ai/api/matrix-base/v1/ocr/upload/file",
+  token: process.env.OSS_UPLOAD_TOKEN,
+  subDir: process.env.OSS_UPLOAD_SUBDIR || "navos/assets/briefs"
+};
+
 let tenantTokenCache = null;
 let appTokenCache = null;
 let userRecordsCache = null;
@@ -193,6 +199,84 @@ function readBody(req) {
     });
     req.on("error", reject);
   });
+}
+
+function readRawBody(req, maxBytes = 50 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        reject(new Error("upload_too_large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function splitBuffer(buffer, separator) {
+  const parts = [];
+  let start = 0;
+  let index = buffer.indexOf(separator, start);
+  while (index !== -1) {
+    parts.push(buffer.subarray(start, index));
+    start = index + separator.length;
+    index = buffer.indexOf(separator, start);
+  }
+  parts.push(buffer.subarray(start));
+  return parts;
+}
+
+async function readMultipartFiles(req) {
+  const contentType = req.headers["content-type"] || "";
+  const boundary = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[1] || contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[2];
+  if (!boundary) throw new Error("missing_upload_boundary");
+  const body = await readRawBody(req);
+  const boundaryBuffer = Buffer.from(`--${boundary}`);
+  return splitBuffer(body, boundaryBuffer)
+    .map((part) => {
+      let clean = part;
+      if (clean.subarray(0, 2).toString() === "\r\n") clean = clean.subarray(2);
+      if (clean.subarray(0, 2).toString() === "--") return null;
+      const headerEnd = clean.indexOf(Buffer.from("\r\n\r\n"));
+      if (headerEnd === -1) return null;
+      const headerText = clean.subarray(0, headerEnd).toString("utf8");
+      let data = clean.subarray(headerEnd + 4);
+      if (data.subarray(data.length - 2).toString() === "\r\n") data = data.subarray(0, data.length - 2);
+      const disposition = headerText.match(/content-disposition:\s*([^\r\n]+)/i)?.[1] || "";
+      const filename = disposition.match(/filename="([^"]*)"/i)?.[1];
+      const name = disposition.match(/name="([^"]*)"/i)?.[1] || "";
+      if (!filename || !data.length) return null;
+      const contentType = headerText.match(/content-type:\s*([^\r\n]+)/i)?.[1] || "application/octet-stream";
+      return { field: name, filename: path.basename(filename), contentType, data };
+    })
+    .filter(Boolean);
+}
+
+async function uploadFileToOss(file) {
+  if (!OSS_CONFIG.token) throw new Error("oss_not_configured");
+  const formData = new FormData();
+  formData.append("file", new Blob([file.data], { type: file.contentType }), file.filename);
+  formData.append("subDir", OSS_CONFIG.subDir);
+  const response = await fetch(OSS_CONFIG.uploadUrl, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${OSS_CONFIG.token}` },
+    body: formData
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result?.data?.isSuccess || !result?.data?.fullUrl) {
+    throw new Error(result?.msg || result?.message || `oss_upload_failed_${response.status}`);
+  }
+  return {
+    name: file.filename,
+    size: file.data.length,
+    url: result.data.fullUrl
+  };
 }
 
 function passwordHash(password, salt) {
@@ -621,6 +705,13 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/bootstrap") {
       requireAuth(req);
       return json(res, 200, await getBootstrap());
+    }
+    if (req.method === "POST" && url.pathname === "/api/uploads") {
+      requireAuth(req);
+      const files = await readMultipartFiles(req);
+      if (!files.length) return json(res, 400, { error: "no_files" });
+      const uploads = await Promise.all(files.map(uploadFileToOss));
+      return json(res, 200, { ok: true, uploads });
     }
     if (req.method === "POST" && url.pathname === "/api/requests") {
       const user = requireAuth(req);
