@@ -146,6 +146,36 @@ async function listRecords(tableId) {
   return items;
 }
 
+async function listFields(tableId) {
+  const token = await getTenantToken();
+  const appToken = await getAppToken();
+  const items = [];
+  let pageToken = "";
+  do {
+    const qs = new URLSearchParams({ page_size: "100" });
+    if (pageToken) qs.set("page_token", pageToken);
+    const data = await feishu(`/bitable/v1/apps/${appToken}/tables/${tableId}/fields?${qs}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    items.push(...(data.data.items || []));
+    pageToken = data.data.page_token || "";
+    if (!data.data.has_more) break;
+  } while (pageToken);
+  return items;
+}
+
+async function ensureTextField(tableId, fieldName) {
+  const fields = await listFields(tableId);
+  if (fields.some((field) => field.field_name === fieldName)) return;
+  const token = await getTenantToken();
+  const appToken = await getAppToken();
+  await feishu(`/bitable/v1/apps/${appToken}/tables/${tableId}/fields`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ field_name: fieldName, type: 1 })
+  });
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -197,6 +227,7 @@ async function createUser({ email, password, name, role = "reviewer" }) {
   if (String(password || "").length < 8) throw new Error("密码至少 8 位");
   const existing = await findUserByEmail(normalized);
   if (existing) throw new Error("该邮箱已注册");
+  await ensureTextField(CONFIG.userTableId, "姓名");
   const token = await getTenantToken();
   const appToken = await getAppToken();
   const salt = crypto.randomBytes(16).toString("hex");
@@ -211,27 +242,12 @@ async function createUser({ email, password, name, role = "reviewer" }) {
     "创建时间": now,
     "更新时间": now
   };
-  const requestPath = `/bitable/v1/apps/${appToken}/tables/${CONFIG.userTableId}/records`;
-  const body = {
-    fields
-  };
-  try {
-    const data = await feishu(requestPath, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify(body)
-    });
-    return publicUser(data.data.record);
-  } catch (error) {
-    const compatibleFields = { ...fields };
-    delete compatibleFields["姓名"];
-    const data = await feishu(requestPath, {
+  const data = await feishu(`/bitable/v1/apps/${appToken}/tables/${CONFIG.userTableId}/records`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ fields: compatibleFields })
-    });
-    return { ...publicUser(data.data.record), name: displayName };
-  }
+    body: JSON.stringify({ fields })
+  });
+  return publicUser(data.data.record);
 }
 
 async function loginUser({ email, password }) {
@@ -371,8 +387,9 @@ function normalizeAsset(record, productByRecordId) {
   const product = productByRecordId.get(productRecordId);
   const file = fields["文件名"] || `${fields["素材ID"] || record.record_id}.mp4`;
   const url = linkValue(fields["视频URL"]) || file;
-  const version = fields["版本"] || deriveVersion(file).version;
-  const assetId = fields["素材ID"] || deriveVersion(file).assetId;
+  const derived = deriveVersion(file);
+  const version = fields["版本"] || derived.version;
+  const assetId = normalizeAssetId(fields["素材ID"]) || derived.assetId;
   return {
     file,
     assetId,
@@ -404,6 +421,11 @@ function normalizeAsset(record, productByRecordId) {
       reviewedAt: fields["审核时间"] || ""
     }
   };
+}
+
+function normalizeAssetId(value) {
+  const id = String(value || "").trim();
+  return id ? id : "";
 }
 
 function deriveVersion(file) {
