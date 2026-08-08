@@ -654,6 +654,12 @@ function collectUrls(value, urls = []) {
   return urls;
 }
 
+function normalizeReferenceImages(value) {
+  const urls = [...new Set(collectUrls(value))]
+    .filter((url) => /\.(jpg|jpeg|png|webp|gif|avif|heic)(\?|#|$)/i.test(url) || /image|img|photo|product/i.test(url));
+  return urls.slice(0, 6);
+}
+
 function normalizeVideoTask(response, meta = {}) {
   const data = response?.data || response || {};
   const status = String(data.status || data.taskStatus || data.state || meta.status || "pending").toLowerCase();
@@ -741,6 +747,7 @@ async function generateProductionScripts(payload) {
 async function createVideoTasks(payload) {
   const scripts = Array.isArray(payload.scripts) ? payload.scripts.filter(Boolean) : [];
   const models = Array.isArray(payload.models) ? payload.models.filter(Boolean) : [];
+  const referenceImages = normalizeReferenceImages(payload.referenceImages || payload.product || []);
   const countPerModel = Math.max(1, Math.min(6, Number(payload.countPerModel || 1)));
   if (!scripts.length) throw new Error("missing_scripts");
   if (!models.length) throw new Error("missing_models");
@@ -752,9 +759,13 @@ async function createVideoTasks(payload) {
         const modelId = typeof model === "string" ? model : model.id;
         const modelName = typeof model === "string" ? model : (model.name || model.id);
         const contentText = String(script.prompt || script.script || "");
+        const content = [
+          { type: "text", text: contentText },
+          ...referenceImages.map((url) => ({ type: "image_url", image_url: { url } }))
+        ];
         const body = {
           model: modelId,
-          content: [{ type: "text", text: contentText }],
+          content,
           resolution: payload.resolution || "720p",
           ratio: payload.ratio || "9:16",
           duration: Number(payload.duration || 15),

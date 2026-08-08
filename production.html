@@ -196,6 +196,13 @@
     }
     const activeProducts = () => state.products.filter((p) => !["禁用","停用","disabled","inactive","off"].includes(String(p.status || "启用").trim().toLowerCase()));
     const selectedProduct = () => activeProducts().find((p) => p.id === $("product").value) || activeProducts()[0];
+    function productReferenceImages(product) {
+      const urls = [product?.cover, ...(Array.isArray(product?.detailImages) ? product.detailImages : [])]
+        .filter(Boolean)
+        .map((url) => typeof url === "string" ? url : (url.link || url.url || url.text || ""))
+        .filter((url) => /^https?:\/\//i.test(url));
+      return [...new Set(urls)].slice(0, 6);
+    }
     function renderProducts() {
       const products = activeProducts();
       $("product").innerHTML = products.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} · ${escapeHtml(p.sku || p.id)}</option>`).join("");
@@ -281,6 +288,8 @@
           body: JSON.stringify({
             scripts: [script],
             models,
+            product: selectedProduct(),
+            referenceImages: productReferenceImages(selectedProduct()),
             countPerModel: $("batchCount").value,
             ratio: $("ratio").value,
             duration: $("duration").value,
