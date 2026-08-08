@@ -601,6 +601,13 @@ function fileUrl(file) {
   return `/${encodeURIComponent(file)}`;
 }
 
+function isLocalRequest(req) {
+  if (process.env.VERCEL) return false;
+  const host = String(req.headers.host || "").split(":")[0].toLowerCase();
+  const forwardedHost = String(req.headers["x-forwarded-host"] || "").split(":")[0].toLowerCase();
+  return ["localhost", "127.0.0.1", "::1"].includes(host) && (!forwardedHost || ["localhost", "127.0.0.1", "::1"].includes(forwardedHost));
+}
+
 async function getBootstrap() {
   const [productRecords, assetRecords] = await Promise.all([
     listRecords(CONFIG.productTableId),
@@ -797,6 +804,7 @@ async function handleApi(req, res, url) {
       return json(res, 200, { ok: true, recordId: result.record.record_id, requestId: result.requestId });
     }
     if (req.method === "POST" && url.pathname === "/api/production/assets") {
+      if (!isLocalRequest(req)) return json(res, 404, { error: "local_only" });
       const user = requireAuth(req);
       const body = await readBody(req);
       const result = await createProductionAsset(user, body);
@@ -819,6 +827,9 @@ function requestHandler(req, res) {
   const host = req.headers.host || `localhost:${PORT}`;
   const url = new URL(req.url, `http://${host}`);
   if (url.pathname.startsWith("/api/")) return handleApi(req, res, url);
+  if (url.pathname === "/production.html" && !isLocalRequest(req)) {
+    return json(res, 404, { error: "local_only" });
+  }
   const decoded = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
   const filePath = path.resolve(ROOT, `.${decoded}`);
   if (!filePath.startsWith(ROOT)) return json(res, 403, { error: "forbidden" });

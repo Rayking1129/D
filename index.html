@@ -1980,7 +1980,6 @@
       .dashboard { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
       .filters { grid-template-columns: minmax(220px, 1fr) 150px 150px; }
       .product-detail-shell { grid-template-columns: 1fr; }
-      .production-view { grid-template-columns: 1fr; }
       .drawer-body { grid-template-columns: 300px minmax(0, 1fr); }
       .drawer-video .phone-frame { width: min(285px, 72vw); }
       .version-audit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2067,7 +2066,6 @@
       <nav class="nav" aria-label="主导航">
         <button class="active" data-view="products">商品库</button>
         <button data-view="grid">素材库</button>
-        <button data-view="production">制作工作台</button>
         <button data-view="requests">需求列表</button>
         <button data-view="table">审核台账</button>
       </nav>
@@ -2101,67 +2099,6 @@
         <div>
           <div class="product-grid" id="productGrid"></div>
           <div class="product-detail" id="productDetail" hidden></div>
-          <div class="production-view" id="productionView">
-            <form class="production-panel" id="productionForm">
-              <label>
-                <span class="label-row">选择商品 <span class="required-mark">*</span></span>
-                <select id="productionProduct" required></select>
-              </label>
-              <label>
-                <span class="label-row">创意方向</span>
-                <select id="productionDirection">
-                  <option>街头穿搭 Streetwear Lifestyle</option>
-                  <option>产品故事 Product Story</option>
-                  <option>性能展示 Performance Demo</option>
-                  <option>UGC 开场钩子 UGC Hook</option>
-                  <option>新品预热 Launch Teaser</option>
-                  <option>视觉实验 Visual Experiment</option>
-                </select>
-              </label>
-              <label>
-                <span class="label-row">脚本数量</span>
-                <input id="productionScriptCount" type="number" min="1" max="8" value="3" />
-              </label>
-              <label>
-                <span class="label-row">补充要求</span>
-                <textarea id="productionBrief" placeholder="例如：东南亚年轻男性、15秒竖屏、前三秒强钩子、强调通勤和穿搭质感。"></textarea>
-              </label>
-              <button class="btn" type="submit">生成创意脚本</button>
-            </form>
-            <div>
-              <section class="script-panel">
-                <div>
-                  <div class="eyebrow">Creative Scripts</div>
-                  <h3>创意脚本与模型提示词</h3>
-                  <p class="summary">选择一条脚本后，可复制提示词到外部视频模型，或上传生成满意的视频并同步到飞书素材库。</p>
-                </div>
-                <div class="script-list" id="productionScripts"></div>
-              </section>
-              <section class="sync-panel">
-                <label>
-                  <span class="label-row">视频模型</span>
-                  <div class="model-grid" id="productionModels"></div>
-                </label>
-                <label>
-                  <span class="label-row">素材标题 <span class="required-mark">*</span></span>
-                  <input id="productionAssetTitle" placeholder="例如：Morning Commute Hook" required />
-                </label>
-                <label>
-                  <span class="label-row">上传满意视频 <span class="required-mark">*</span></span>
-                  <input id="productionVideo" type="file" accept="video/*" required />
-                </label>
-                <label>
-                  <span class="label-row">素材标签</span>
-                  <input id="productionTags" placeholder="制作端上传, 可投放, 街头" />
-                </label>
-                <label>
-                  <span class="label-row">最终提示词</span>
-                  <textarea id="productionPrompt" placeholder="选择脚本后会自动填充，也可以人工调整。"></textarea>
-                </label>
-                <button class="btn" id="syncProductionAsset" type="button">上传并同步到素材库</button>
-              </section>
-            </div>
-          </div>
           <div class="request-view" id="requestView">
             <form class="request-form" id="requestForm">
               <label class="product-combobox" id="requestProductCombo">
@@ -2341,9 +2278,6 @@
       productFilter: "all",
       selectedProductId: "",
       productGalleryIndex: 0,
-      productionScripts: [],
-      selectedProductionScript: 0,
-      selectedProductionModel: "Seedance 2.0",
     };
 
     let backendRefreshTimer = null;
@@ -3284,7 +3218,6 @@
       renderDashboard();
       renderProducts();
       renderProductDetail();
-      renderProductionStudio();
       renderRequestForm();
       renderGrid(list);
       renderTable(list);
@@ -3292,11 +3225,10 @@
       renderUserProfile();
       $("productGrid").style.display = state.view === "products" ? "grid" : "none";
       $("productDetail").hidden = state.view !== "productDetail";
-      $("productionView").style.display = state.view === "production" ? "grid" : "none";
       $("requestView").style.display = state.view === "requests" ? "grid" : "none";
       $("assetGrid").style.display = state.view === "grid" ? "grid" : "none";
       $("tableView").style.display = state.view === "table" ? "block" : "none";
-      $("emptyState").hidden = state.view === "products" || state.view === "productDetail" || state.view === "production" || list.length > 0;
+      $("emptyState").hidden = state.view === "products" || state.view === "productDetail" || list.length > 0;
       document.querySelectorAll(".nav button").forEach((button) => {
         const activeView = state.view === "productDetail" ? "products" : state.view;
         button.classList.toggle("active", button.dataset.view === activeView);
@@ -3308,7 +3240,6 @@
         products: ["Product Library", "商品库", "Manage product lines and see which creative assets are attached to each SKU."],
         productDetail: ["Product Detail", "商品详情", "View product galleries, selling points, specs, source links, and attached creative assets."],
         grid: ["Asset Intelligence", "素材库", "Review the latest version of each creative asset, inspect video previews, and sync decisions back to Feishu."],
-        production: ["Creative Production", "制作工作台", "Generate scripts, route prompts to video models, upload approved production cuts, and sync them into the review asset library."],
         requests: ["Demand Intake", "需求列表", "填写商品、数量和交付要求，提交后进入制作排期。"],
         table: ["Review Ledger", "审核台账", "Audit status, comments, versions, and publishing readiness in one operational ledger."]
       }[state.view] || ["Navos Creative Hub", "Navos 创意素材 Hub", "A modern command center for AI creative operations."];
@@ -3444,39 +3375,6 @@
     $("search").addEventListener("input", (event) => {
       state.query = event.target.value;
       render();
-    });
-
-    $("productionForm").addEventListener("submit", (event) => {
-      event.preventDefault();
-      generateProductionScripts();
-      renderProductionStudio();
-      showToast("创意脚本已生成");
-    });
-
-    $("syncProductionAsset").addEventListener("click", async () => {
-      const button = $("syncProductionAsset");
-      button.disabled = true;
-      try {
-        const result = await runWithFeedback(
-          () => syncProductionAsset(),
-          {
-            loadingTitle: "正在同步素材",
-            loadingMessage: "视频正在上传 OSS，并写入飞书素材库。你可以稍后在素材库审核队列里查看。",
-            successTitle: "素材已进入审核库",
-            successMessage: (data) => `素材 ${data.assetId} 已同步到飞书素材库，审核团队可以开始审核。`,
-            errorTitle: "同步素材失败",
-            autoClose: 1600
-          }
-        );
-        await preloadBackendData({ preserveSelection: false });
-        state.view = "grid";
-        state.query = String(result.assetId || "");
-        render();
-      } catch (error) {
-        showToast(error.message);
-      } finally {
-        button.disabled = false;
-      }
     });
 
     async function uploadRequestAttachments(files) {
