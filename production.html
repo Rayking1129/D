@@ -28,12 +28,15 @@
     input,select,textarea { width:100%; min-height:48px; border:1px solid var(--line); border-radius:12px; padding:12px 14px; font:inherit; background:#fff; outline:none; transition:.18s; position:relative; z-index:1; }
     textarea { min-height:108px; resize:vertical; line-height:1.55; }
     input:focus,select:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 4px rgba(0,113,227,.12); }
+    input:disabled,select:disabled,textarea:disabled { color:#8d8d93; background:#f4f4f6; cursor:not-allowed; }
     button,.btn { border:0; border-radius:999px; min-height:48px; padding:0 18px; background:#1d1d1f; color:#fff; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; transition:transform .16s, box-shadow .16s, opacity .16s; }
     button:hover,.btn:hover { transform:translateY(-1px); box-shadow:0 12px 28px rgba(0,0,0,.12); }
     button:disabled { opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
     button.secondary,.btn.secondary { background:#fff; color:var(--ink); border:1px solid var(--line); }
     button.blue { background:var(--blue); }
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .product-picker { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; }
+    .product-picker button { min-width:88px; }
     .scripts,.tasks { display:grid; gap:10px; }
     .script,.task { border:1px solid var(--line); border-radius:13px; background:#fff; padding:14px; display:grid; gap:10px; }
     .script { cursor:pointer; }
@@ -84,7 +87,12 @@
 
       <section class="panel">
         <form id="scriptForm" class="card">
-          <label>选择商品<select id="product" required></select></label>
+          <label>选择商品
+            <div class="product-picker">
+              <select id="product" required disabled><option value="">请先登录后选择商品</option></select>
+              <button id="reloadProducts" class="secondary" type="button">刷新</button>
+            </div>
+          </label>
           <label>创意方向
             <select id="direction">
               <option>Streetwear Lifestyle</option>
@@ -199,6 +207,10 @@
     }
     const activeProducts = () => state.products.filter((p) => !["禁用","停用","disabled","inactive","off"].includes(String(p.status || "启用").trim().toLowerCase()));
     const selectedProduct = () => activeProducts().find((p) => p.id === $("product").value) || activeProducts()[0];
+    function setProductMessage(message) {
+      $("product").disabled = true;
+      $("product").innerHTML = `<option value="">${escapeHtml(message)}</option>`;
+    }
     function productReferenceImages(product) {
       const urls = [product?.cover, ...(Array.isArray(product?.detailImages) ? product.detailImages : [])]
         .filter(Boolean)
@@ -254,12 +266,23 @@
       return { pending:"排队中", processing:"生成中", running:"生成中", completed:"已完成", failed:"失败" }[String(status || "").toLowerCase()] || status || "未知";
     }
     async function loadData() {
-      if (!state.token) return;
-      $("product").disabled = true;
-      $("product").innerHTML = `<option value="">商品加载中...</option>`;
+      if (!state.token) {
+        setProductMessage("请先登录后选择商品");
+        return;
+      }
+      setProductMessage("商品加载中...");
+      const loadId = Date.now();
+      state.productLoadId = loadId;
+      const slowTimer = setTimeout(() => {
+        if (state.productLoadId === loadId && $("product").disabled) {
+          setProductMessage("商品加载较慢，请稍等或点击刷新");
+        }
+      }, 5000);
       const res = await api("/api/bootstrap");
+      clearTimeout(slowTimer);
+      if (state.productLoadId !== loadId) return;
       if (!res.ok) {
-        $("product").innerHTML = `<option value="">商品加载失败，请重新登录</option>`;
+        setProductMessage("商品加载失败，请重新登录");
         return;
       }
       const data = await res.json();
@@ -269,6 +292,7 @@
     }
     async function generateScripts() {
       const product = selectedProduct();
+      if (!state.token) throw new Error("请先登录制作端");
       if (!product) throw new Error("请先配置可用商品");
       setBusy($("scriptButton"), true, "生成中");
       try {
@@ -411,8 +435,8 @@
         if (!res.ok) throw new Error(data.error || "登录失败");
         state.token = data.token;
         localStorage.setItem("production-token", data.token);
-        toast("登录成功");
-        await loadData();
+        toast("登录成功，正在加载商品");
+        loadData().catch((error) => toast(error.message));
       } catch (error) {
         toast(error.message);
       } finally {
@@ -420,6 +444,7 @@
       }
     });
     $("scriptForm").addEventListener("submit", (event) => { event.preventDefault(); generateScripts().catch((error) => toast(error.message)); });
+    $("reloadProducts").addEventListener("click", () => loadData().catch((error) => toast(error.message)));
     $("videoButton").addEventListener("click", () => createVideos().catch((error) => toast(error.message)));
     $("manualSync").addEventListener("click", () => syncManualAsset().catch((error) => toast(error.message)));
     $("scripts").addEventListener("click", (event) => {
