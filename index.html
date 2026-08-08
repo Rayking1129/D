@@ -468,6 +468,128 @@
       min-height: 48px;
     }
 
+    .production-view {
+      display: none;
+      grid-template-columns: minmax(360px, .82fr) minmax(0, 1.18fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .production-panel,
+    .script-panel,
+    .sync-panel {
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(255,255,255,.94);
+      border-radius: 8px;
+      box-shadow: 0 22px 58px rgba(0,0,0,.08);
+      padding: 20px;
+    }
+
+    .production-panel,
+    .sync-panel {
+      display: grid;
+      gap: 14px;
+    }
+
+    .production-panel label,
+    .sync-panel label {
+      display: grid;
+      gap: 8px;
+    }
+
+    .production-panel input,
+    .production-panel select,
+    .production-panel textarea,
+    .sync-panel input,
+    .sync-panel select,
+    .sync-panel textarea {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fff, #fbfbfd);
+      padding: 12px 14px;
+      outline: none;
+      color: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 24px rgba(0,0,0,.04);
+      font: inherit;
+    }
+
+    .production-panel textarea,
+    .sync-panel textarea {
+      min-height: 112px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .script-panel {
+      display: grid;
+      gap: 14px;
+    }
+
+    .script-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .script-card {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .script-card:hover {
+      transform: translateY(-1px);
+    }
+
+    .script-card.active {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(0,113,227,.12);
+    }
+
+    .script-card h4 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .script-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .sync-panel {
+      margin-top: 18px;
+    }
+
+    .model-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .model-chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: left;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .model-chip.active {
+      border-color: var(--black);
+      background: var(--black);
+      color: #fff;
+    }
+
     .required-mark {
       color: var(--red);
       font-weight: 900;
@@ -1858,6 +1980,7 @@
       .dashboard { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
       .filters { grid-template-columns: minmax(220px, 1fr) 150px 150px; }
       .product-detail-shell { grid-template-columns: 1fr; }
+      .production-view { grid-template-columns: 1fr; }
       .drawer-body { grid-template-columns: 300px minmax(0, 1fr); }
       .drawer-video .phone-frame { width: min(285px, 72vw); }
       .version-audit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1944,6 +2067,7 @@
       <nav class="nav" aria-label="主导航">
         <button class="active" data-view="products">商品库</button>
         <button data-view="grid">素材库</button>
+        <button data-view="production">制作工作台</button>
         <button data-view="requests">需求列表</button>
         <button data-view="table">审核台账</button>
       </nav>
@@ -1977,6 +2101,67 @@
         <div>
           <div class="product-grid" id="productGrid"></div>
           <div class="product-detail" id="productDetail" hidden></div>
+          <div class="production-view" id="productionView">
+            <form class="production-panel" id="productionForm">
+              <label>
+                <span class="label-row">选择商品 <span class="required-mark">*</span></span>
+                <select id="productionProduct" required></select>
+              </label>
+              <label>
+                <span class="label-row">创意方向</span>
+                <select id="productionDirection">
+                  <option>街头穿搭 Streetwear Lifestyle</option>
+                  <option>产品故事 Product Story</option>
+                  <option>性能展示 Performance Demo</option>
+                  <option>UGC 开场钩子 UGC Hook</option>
+                  <option>新品预热 Launch Teaser</option>
+                  <option>视觉实验 Visual Experiment</option>
+                </select>
+              </label>
+              <label>
+                <span class="label-row">脚本数量</span>
+                <input id="productionScriptCount" type="number" min="1" max="8" value="3" />
+              </label>
+              <label>
+                <span class="label-row">补充要求</span>
+                <textarea id="productionBrief" placeholder="例如：东南亚年轻男性、15秒竖屏、前三秒强钩子、强调通勤和穿搭质感。"></textarea>
+              </label>
+              <button class="btn" type="submit">生成创意脚本</button>
+            </form>
+            <div>
+              <section class="script-panel">
+                <div>
+                  <div class="eyebrow">Creative Scripts</div>
+                  <h3>创意脚本与模型提示词</h3>
+                  <p class="summary">选择一条脚本后，可复制提示词到外部视频模型，或上传生成满意的视频并同步到飞书素材库。</p>
+                </div>
+                <div class="script-list" id="productionScripts"></div>
+              </section>
+              <section class="sync-panel">
+                <label>
+                  <span class="label-row">视频模型</span>
+                  <div class="model-grid" id="productionModels"></div>
+                </label>
+                <label>
+                  <span class="label-row">素材标题 <span class="required-mark">*</span></span>
+                  <input id="productionAssetTitle" placeholder="例如：Morning Commute Hook" required />
+                </label>
+                <label>
+                  <span class="label-row">上传满意视频 <span class="required-mark">*</span></span>
+                  <input id="productionVideo" type="file" accept="video/*" required />
+                </label>
+                <label>
+                  <span class="label-row">素材标签</span>
+                  <input id="productionTags" placeholder="制作端上传, 可投放, 街头" />
+                </label>
+                <label>
+                  <span class="label-row">最终提示词</span>
+                  <textarea id="productionPrompt" placeholder="选择脚本后会自动填充，也可以人工调整。"></textarea>
+                </label>
+                <button class="btn" id="syncProductionAsset" type="button">上传并同步到素材库</button>
+              </section>
+            </div>
+          </div>
           <div class="request-view" id="requestView">
             <form class="request-form" id="requestForm">
               <label class="product-combobox" id="requestProductCombo">
@@ -2156,6 +2341,9 @@
       productFilter: "all",
       selectedProductId: "",
       productGalleryIndex: 0,
+      productionScripts: [],
+      selectedProductionScript: 0,
+      selectedProductionModel: "Seedance 2.0",
     };
 
     let backendRefreshTimer = null;
@@ -2718,6 +2906,89 @@
       `;
     }
 
+    function renderProductionStudio() {
+      const visibleProducts = activeProducts();
+      if ($("productionProduct")) {
+        $("productionProduct").innerHTML = visibleProducts.map((product) => (
+          `<option value="${escapeAttr(product.id)}">${escapeHtml(product.name)} · ${escapeHtml(product.sku || product.id)}</option>`
+        )).join("");
+      }
+      if ($("productionModels")) {
+        const models = ["Seedance 2.0", "Kling", "Veo", "Sora", "Runway", "Pika"];
+        $("productionModels").innerHTML = models.map((model) => `
+          <button class="model-chip ${state.selectedProductionModel === model ? "active" : ""}" type="button" data-action="select-production-model" data-model="${escapeAttr(model)}">${escapeHtml(model)}</button>
+        `).join("");
+      }
+      if ($("productionScripts")) {
+        $("productionScripts").innerHTML = state.productionScripts.length ? state.productionScripts.map((script, index) => `
+          <article class="script-card ${state.selectedProductionScript === index ? "active" : ""}" data-action="select-production-script" data-index="${index}">
+            <h4>${escapeHtml(script.title)}</h4>
+            <p>${escapeHtml(script.script)}</p>
+            <p><strong>Prompt:</strong> ${escapeHtml(script.prompt)}</p>
+          </article>
+        `).join("") : `<div class="empty"><h4>暂无脚本</h4><p>先选择商品和方向，生成一组可用于视频模型的创意脚本。</p></div>`;
+      }
+    }
+
+    function generateProductionScripts() {
+      const product = activeProducts().find((item) => item.id === $("productionProduct").value) || activeProducts()[0];
+      const direction = $("productionDirection").value;
+      const count = Math.max(1, Math.min(8, Number($("productionScriptCount").value || 3)));
+      const brief = $("productionBrief").value.trim();
+      const features = productFeatures(product);
+      const productName = product?.name || "Product";
+      const sku = product?.sku || product?.id || "";
+      const angles = [
+        ["3秒强钩子", "open with a fast hand-held push-in, product entering frame with a confident step"],
+        ["生活方式转场", "match cut from real street moment to polished product close-up"],
+        ["材质特写", "macro detail of texture, stitching, logo, and tactile surfaces"],
+        ["人群场景", "young creator walking through city light with natural movement"],
+        ["电商可投放", "clean product reveal, readable silhouette, strong final hero frame"],
+        ["视觉实验", "high contrast lighting, kinetic camera, premium campaign finish"]
+      ];
+      state.productionScripts = Array.from({ length: count }, (_, index) => {
+        const angle = angles[index % angles.length];
+        const title = `${productName} · ${angle[0]}`;
+        const feature = features[index % Math.max(features.length, 1)] || product?.description || "核心卖点清晰可见";
+        const script = `15秒竖屏。0-3秒用${angle[0]}建立注意力，3-10秒围绕「${feature}」展示商品与人群场景，10-15秒给到清晰商品英雄镜头和可投放结尾。方向：${direction}${brief ? `。补充：${brief}` : ""}`;
+        const prompt = `${angle[1]}, ${productName} ${sku}, ${direction}, vertical 9:16, 15 seconds, premium commercial video, realistic product detail, smooth camera movement, sharp focus, natural hands and body movement, no distorted logo, no extra text overlays. ${brief}`;
+        return { title, script, prompt, direction };
+      });
+      state.selectedProductionScript = 0;
+      const first = state.productionScripts[0];
+      if ($("productionAssetTitle")) $("productionAssetTitle").value = first?.title || "";
+      if ($("productionPrompt")) $("productionPrompt").value = first?.prompt || "";
+    }
+
+    async function syncProductionAsset() {
+      const product = activeProducts().find((item) => item.id === $("productionProduct").value);
+      const script = state.productionScripts[state.selectedProductionScript] || {};
+      const file = $("productionVideo").files[0];
+      if (!product) throw new Error("请选择启用商品");
+      if (!file) throw new Error("请上传满意视频");
+      const uploads = await uploadRequestAttachments([file]);
+      const url = uploads[0]?.split(": ").slice(1).join(": ");
+      if (!url) throw new Error("视频上传失败");
+      const response = await apiFetch("/api/production/assets", {
+        method: "POST",
+        body: JSON.stringify({
+          productId: product.id,
+          title: $("productionAssetTitle").value || script.title,
+          fileName: file.name,
+          url,
+          size: file.size,
+          model: state.selectedProductionModel,
+          direction: $("productionDirection").value,
+          script: script.script || "",
+          prompt: $("productionPrompt").value || script.prompt || "",
+          tags: normalizeTags($("productionTags").value || "制作端上传,待审核")
+        })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "同步素材失败");
+      return result;
+    }
+
     function renderGrid(list) {
       $("assetGrid").innerHTML = list.map((asset) => {
         const record = state.records[asset.file];
@@ -3013,6 +3284,7 @@
       renderDashboard();
       renderProducts();
       renderProductDetail();
+      renderProductionStudio();
       renderRequestForm();
       renderGrid(list);
       renderTable(list);
@@ -3020,10 +3292,11 @@
       renderUserProfile();
       $("productGrid").style.display = state.view === "products" ? "grid" : "none";
       $("productDetail").hidden = state.view !== "productDetail";
+      $("productionView").style.display = state.view === "production" ? "grid" : "none";
       $("requestView").style.display = state.view === "requests" ? "grid" : "none";
       $("assetGrid").style.display = state.view === "grid" ? "grid" : "none";
       $("tableView").style.display = state.view === "table" ? "block" : "none";
-      $("emptyState").hidden = state.view === "products" || state.view === "productDetail" || list.length > 0;
+      $("emptyState").hidden = state.view === "products" || state.view === "productDetail" || state.view === "production" || list.length > 0;
       document.querySelectorAll(".nav button").forEach((button) => {
         const activeView = state.view === "productDetail" ? "products" : state.view;
         button.classList.toggle("active", button.dataset.view === activeView);
@@ -3035,6 +3308,7 @@
         products: ["Product Library", "商品库", "Manage product lines and see which creative assets are attached to each SKU."],
         productDetail: ["Product Detail", "商品详情", "View product galleries, selling points, specs, source links, and attached creative assets."],
         grid: ["Asset Intelligence", "素材库", "Review the latest version of each creative asset, inspect video previews, and sync decisions back to Feishu."],
+        production: ["Creative Production", "制作工作台", "Generate scripts, route prompts to video models, upload approved production cuts, and sync them into the review asset library."],
         requests: ["Demand Intake", "需求列表", "填写商品、数量和交付要求，提交后进入制作排期。"],
         table: ["Review Ledger", "审核台账", "Audit status, comments, versions, and publishing readiness in one operational ledger."]
       }[state.view] || ["Navos Creative Hub", "Navos 创意素材 Hub", "A modern command center for AI creative operations."];
@@ -3122,6 +3396,25 @@
         return;
       }
 
+      const modelOption = event.target.closest("[data-action='select-production-model']");
+      if (modelOption) {
+        state.selectedProductionModel = modelOption.dataset.model;
+        renderProductionStudio();
+        showToast(`已选择 ${state.selectedProductionModel}`);
+        return;
+      }
+
+      const scriptOption = event.target.closest("[data-action='select-production-script']");
+      if (scriptOption) {
+        state.selectedProductionScript = Number(scriptOption.dataset.index || 0);
+        const script = state.productionScripts[state.selectedProductionScript] || {};
+        if ($("productionAssetTitle")) $("productionAssetTitle").value = script.title || "";
+        if ($("productionPrompt")) $("productionPrompt").value = script.prompt || "";
+        renderProductionStudio();
+        showToast("已选择创意脚本");
+        return;
+      }
+
       if (!event.target.closest("#requestProductCombo")) {
         $("requestProductCombo")?.classList.remove("open");
         $("requestProductButton")?.setAttribute("aria-expanded", "false");
@@ -3151,6 +3444,39 @@
     $("search").addEventListener("input", (event) => {
       state.query = event.target.value;
       render();
+    });
+
+    $("productionForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      generateProductionScripts();
+      renderProductionStudio();
+      showToast("创意脚本已生成");
+    });
+
+    $("syncProductionAsset").addEventListener("click", async () => {
+      const button = $("syncProductionAsset");
+      button.disabled = true;
+      try {
+        const result = await runWithFeedback(
+          () => syncProductionAsset(),
+          {
+            loadingTitle: "正在同步素材",
+            loadingMessage: "视频正在上传 OSS，并写入飞书素材库。你可以稍后在素材库审核队列里查看。",
+            successTitle: "素材已进入审核库",
+            successMessage: (data) => `素材 ${data.assetId} 已同步到飞书素材库，审核团队可以开始审核。`,
+            errorTitle: "同步素材失败",
+            autoClose: 1600
+          }
+        );
+        await preloadBackendData({ preserveSelection: false });
+        state.view = "grid";
+        state.query = String(result.assetId || "");
+        render();
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        button.disabled = false;
+      }
     });
 
     async function uploadRequestAttachments(files) {

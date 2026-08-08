@@ -103,6 +103,20 @@ async function feishu(pathname, options = {}) {
   return data;
 }
 
+async function feishuWithRetry(pathname, options = {}, retries = 3) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await feishu(pathname, options);
+    } catch (error) {
+      lastError = error;
+      if (!/1254607|Data not ready/i.test(error.message) || attempt === retries) break;
+      await new Promise((resolve) => setTimeout(resolve, 1200 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 async function getTenantToken() {
   const now = Date.now();
   if (tenantTokenCache && tenantTokenCache.expiresAt > now + 60000) {
@@ -553,6 +567,13 @@ function parseSize(value) {
   return /kb/i.test(value) ? Math.round(number * 1024) : Math.round(number * 1024 * 1024);
 }
 
+function formatSize(bytes) {
+  const size = Number(bytes || 0);
+  if (!size) return "";
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
 function mediaTypeFor(file) {
   const clean = String(file || "").split(/[?#]/)[0].toLowerCase();
   if (/\.(jpg|jpeg|png|webp|gif|avif|heic)$/.test(clean)) return "image";
@@ -677,6 +698,62 @@ async function createRequest(user, payload) {
   return { record: data.data.record, requestId };
 }
 
+async function createProductionAsset(user, payload) {
+  const token = await getTenantToken();
+  const appToken = await getAppToken();
+  const [productRecords, assetRecords] = await Promise.all([
+    listRecords(CONFIG.productTableId),
+    listRecords(CONFIG.assetTableId)
+  ]);
+  const productRecord = productRecords.find((record) => {
+    const fields = record.fields || {};
+    return fields["商品ID"] === payload.productId || record.record_id === payload.productRecordId;
+  });
+  if (!productRecord) throw new Error("product_not_found");
+
+  await Promise.all([
+    ensureTextField(CONFIG.assetTableId, "生成模型"),
+    ensureTextField(CONFIG.assetTableId, "创意脚本"),
+    ensureTextField(CONFIG.assetTableId, "生成提示词"),
+    ensureTextField(CONFIG.assetTableId, "制作人")
+  ]);
+
+  const now = Date.now();
+  const numericIds = assetRecords
+    .map((record) => Number(String(record.fields?.["素材ID"] || "").trim()))
+    .filter((value) => Number.isFinite(value));
+  const nextAssetId = String(Math.max(100000, ...numericIds) + 1);
+  const title = String(payload.title || payload.scriptTitle || `Creative Asset ${nextAssetId}`).trim();
+  const filename = String(payload.fileName || `${nextAssetId}.mp4`).trim();
+  const tags = Array.isArray(payload.tags) ? payload.tags.filter(Boolean) : ["制作端上传"];
+  const fields = {
+    "素材ID": nextAssetId,
+    "素材名称": title,
+    "文件名": filename,
+    "视频URL": { text: String(payload.url || ""), link: String(payload.url || "") },
+    "版本": "V1",
+    "场景": String(payload.scene || payload.direction || "制作端上传"),
+    "文件大小": formatSize(payload.size),
+    "关联商品": [productRecord.record_id],
+    "审核状态": "待审核",
+    "发布状态": false,
+    "素材标签": tags,
+    "修改意见": "",
+    "生成模型": String(payload.model || ""),
+    "创意脚本": String(payload.script || ""),
+    "生成提示词": String(payload.prompt || ""),
+    "制作人": user.name || user.email,
+    "创建时间": now,
+    "更新时间": now
+  };
+  const data = await feishuWithRetry(`/bitable/v1/apps/${appToken}/tables/${CONFIG.assetTableId}/records`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ fields })
+  }, 5);
+  return { record: data.data.record, assetId: nextAssetId };
+}
+
 async function handleApi(req, res, url) {
   try {
     if (req.method === "OPTIONS") return json(res, 204, {});
@@ -718,6 +795,12 @@ async function handleApi(req, res, url) {
       const body = await readBody(req);
       const result = await createRequest(user, body);
       return json(res, 200, { ok: true, recordId: result.record.record_id, requestId: result.requestId });
+    }
+    if (req.method === "POST" && url.pathname === "/api/production/assets") {
+      const user = requireAuth(req);
+      const body = await readBody(req);
+      const result = await createProductionAsset(user, body);
+      return json(res, 200, { ok: true, recordId: result.record.record_id, assetId: result.assetId });
     }
     const match = url.pathname.match(/^\/api\/assets\/([^/]+)$/);
     if (req.method === "PUT" && match) {
