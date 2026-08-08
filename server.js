@@ -25,6 +25,14 @@ const OSS_CONFIG = {
   subDir: process.env.OSS_UPLOAD_SUBDIR || "navos/assets/briefs"
 };
 
+const MODEL_CONFIG = {
+  baseUrl: process.env.MODEL_SQUARE_BASE_URL || "https://open-power.tec-do.cn",
+  appSecret: process.env.MODEL_SQUARE_APP_SECRET,
+  deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
+  deepseekApiKey: process.env.DEEPSEEK_API_KEY,
+  deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-chat"
+};
+
 let tenantTokenCache = null;
 let appTokenCache = null;
 let userRecordsCache = null;
@@ -608,6 +616,177 @@ function isLocalRequest(req) {
   return ["localhost", "127.0.0.1", "::1"].includes(host) && (!forwardedHost || ["localhost", "127.0.0.1", "::1"].includes(forwardedHost));
 }
 
+function cleanBaseUrl(value) {
+  return String(value || "").replace(/\/+$/, "");
+}
+
+async function modelSquare(pathname, options = {}) {
+  if (!MODEL_CONFIG.appSecret) throw new Error("model_square_not_configured");
+  const response = await fetch(`${cleanBaseUrl(MODEL_CONFIG.baseUrl)}${pathname}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "X-App-Secret": MODEL_CONFIG.appSecret,
+      ...(options.headers || {})
+    }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || (typeof data.code === "number" && data.code !== 0)) {
+    throw new Error(data.msg || data.message || `model_square_failed_${response.status}`);
+  }
+  return data;
+}
+
+function collectUrls(value, urls = []) {
+  if (!value) return urls;
+  if (typeof value === "string") {
+    if (/^https?:\/\//i.test(value)) urls.push(value);
+    return urls;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectUrls(item, urls));
+    return urls;
+  }
+  if (typeof value === "object") {
+    ["url", "videoUrl", "video_url", "fullUrl", "resultUrl", "outputUrl", "coverUrl"].forEach((key) => collectUrls(value[key], urls));
+    ["urls", "videos", "videoUrls", "video_urls", "result", "results", "output", "outputs", "files"].forEach((key) => collectUrls(value[key], urls));
+  }
+  return urls;
+}
+
+function normalizeVideoTask(response, meta = {}) {
+  const data = response?.data || response || {};
+  const status = String(data.status || data.taskStatus || data.state || meta.status || "pending").toLowerCase();
+  const urls = [...new Set(collectUrls(data))];
+  return {
+    ...meta,
+    taskId: data.taskId || data.task_id || data.id || meta.taskId || "",
+    status,
+    urls,
+    url: urls[0] || "",
+    message: data.message || data.msg || data.error || ""
+  };
+}
+
+function fallbackProductionScripts(payload) {
+  const product = payload.product || {};
+  const direction = String(payload.direction || "Product Story");
+  const brief = String(payload.brief || "").trim();
+  const count = Math.max(1, Math.min(8, Number(payload.count || 3)));
+  const features = Array.isArray(product.features) && product.features.length ? product.features : [
+    product.description || "清晰展示商品核心卖点",
+    "突出材质、轮廓和上身效果",
+    "用真实场景强化购买想象"
+  ];
+  const angles = [
+    ["3秒强钩子", "fast handheld push-in, first three seconds strong hook"],
+    ["生活方式转场", "match cut from lifestyle moment to product close-up"],
+    ["材质特写", "macro detail of material, logo and texture"],
+    ["街头穿搭", "streetwear outfit, natural walking scene"],
+    ["电商可投放", "clean product reveal, hero commercial frame"],
+    ["视觉实验", "kinetic camera movement, premium visual experiment"]
+  ];
+  return Array.from({ length: count }, (_, index) => {
+    const angle = angles[index % angles.length];
+    const feature = features[index % features.length];
+    return {
+      title: `${product.name || "Product"} · ${angle[0]}`,
+      script: `15秒竖屏短视频。0-3秒用${angle[0]}建立注意力，3-10秒围绕“${feature}”展示商品与使用场景，10-15秒给到商品英雄镜头和可投放结尾。方向：${direction}${brief ? `。补充要求：${brief}` : ""}`,
+      prompt: `${angle[1]}, ${product.name || "product"} ${product.sku || ""}, ${direction}, vertical 9:16, 15 seconds, premium realistic commercial video, smooth camera, sharp product detail, no distorted logo, no extra text. ${brief}`.trim()
+    };
+  });
+}
+
+async function generateProductionScripts(payload) {
+  if (!MODEL_CONFIG.deepseekApiKey) {
+    return { provider: "local", scripts: fallbackProductionScripts(payload) };
+  }
+  const product = payload.product || {};
+  const count = Math.max(1, Math.min(8, Number(payload.count || 3)));
+  const response = await fetch(`${cleanBaseUrl(MODEL_CONFIG.deepseekBaseUrl)}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      Authorization: `Bearer ${MODEL_CONFIG.deepseekApiKey}`
+    },
+    body: JSON.stringify({
+      model: MODEL_CONFIG.deepseekModel,
+      temperature: 0.8,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: "你是海外电商短视频创意导演。只输出 JSON，格式为 {\"scripts\":[{\"title\":\"\",\"script\":\"\",\"prompt\":\"\"}]}。prompt 必须适合视频生成模型，英文，竖屏广告风格。" },
+        { role: "user", content: JSON.stringify({ product, direction: payload.direction, brief: payload.brief, count }) }
+      ]
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error?.message || data.message || `deepseek_failed_${response.status}`);
+  const content = data.choices?.[0]?.message?.content || "";
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    try {
+      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    } catch {
+      parsed = {};
+    }
+  }
+  const scripts = Array.isArray(parsed.scripts) ? parsed.scripts.slice(0, count) : [];
+  if (!scripts.length) return { provider: "local", scripts: fallbackProductionScripts(payload) };
+  return { provider: "deepseek", scripts };
+}
+
+async function createVideoTasks(payload) {
+  const scripts = Array.isArray(payload.scripts) ? payload.scripts.filter(Boolean) : [];
+  const models = Array.isArray(payload.models) ? payload.models.filter(Boolean) : [];
+  const countPerModel = Math.max(1, Math.min(6, Number(payload.countPerModel || 1)));
+  if (!scripts.length) throw new Error("missing_scripts");
+  if (!models.length) throw new Error("missing_models");
+
+  const jobs = [];
+  scripts.forEach((script, scriptIndex) => {
+    models.forEach((model) => {
+      for (let copy = 0; copy < countPerModel; copy += 1) {
+        const modelId = typeof model === "string" ? model : model.id;
+        const modelName = typeof model === "string" ? model : (model.name || model.id);
+        const contentText = String(script.prompt || script.script || "");
+        const body = {
+          model: modelId,
+          content: [{ type: "text", text: contentText }],
+          resolution: payload.resolution || "720p",
+          ratio: payload.ratio || "9:16",
+          duration: Number(payload.duration || 15),
+          watermark: Boolean(payload.watermark),
+          generateAudio: payload.generateAudio !== false
+        };
+        jobs.push({ body, meta: { localId: crypto.randomUUID(), model: modelId, modelName, scriptIndex, copy: copy + 1, title: script.title || "", prompt: contentText, script: script.script || "" } });
+      }
+    });
+  });
+
+  const results = await Promise.allSettled(jobs.map(async (job) => {
+    const response = await modelSquare("/tecpower/ai/openapi/video/create", {
+      method: "POST",
+      body: JSON.stringify(job.body)
+    });
+    return normalizeVideoTask(response, job.meta);
+  }));
+
+  return results.map((result, index) => {
+    if (result.status === "fulfilled") return result.value;
+    return { ...jobs[index].meta, status: "failed", error: result.reason?.message || "create_failed", urls: [], url: "" };
+  });
+}
+
+async function getVideoTask(taskId) {
+  const response = await modelSquare(`/tecpower/ai/openapi/video/task?taskId=${encodeURIComponent(taskId)}`, {
+    method: "GET"
+  });
+  return normalizeVideoTask(response, { taskId });
+}
+
 async function getBootstrap() {
   const [productRecords, assetRecords] = await Promise.all([
     listRecords(CONFIG.productTableId),
@@ -809,6 +988,27 @@ async function handleApi(req, res, url) {
       const body = await readBody(req);
       const result = await createProductionAsset(user, body);
       return json(res, 200, { ok: true, recordId: result.record.record_id, assetId: result.assetId });
+    }
+    if (req.method === "POST" && url.pathname === "/api/production/scripts") {
+      if (!isLocalRequest(req)) return json(res, 404, { error: "local_only" });
+      requireAuth(req);
+      const body = await readBody(req);
+      const result = await generateProductionScripts(body);
+      return json(res, 200, { ok: true, ...result });
+    }
+    if (req.method === "POST" && url.pathname === "/api/production/videos") {
+      if (!isLocalRequest(req)) return json(res, 404, { error: "local_only" });
+      requireAuth(req);
+      const body = await readBody(req);
+      const tasks = await createVideoTasks(body);
+      return json(res, 200, { ok: true, tasks });
+    }
+    const videoTaskMatch = url.pathname.match(/^\/api\/production\/videos\/([^/]+)$/);
+    if (req.method === "GET" && videoTaskMatch) {
+      if (!isLocalRequest(req)) return json(res, 404, { error: "local_only" });
+      requireAuth(req);
+      const task = await getVideoTask(decodeURIComponent(videoTaskMatch[1]));
+      return json(res, 200, { ok: true, task });
     }
     const match = url.pathname.match(/^\/api\/assets\/([^/]+)$/);
     if (req.method === "PUT" && match) {

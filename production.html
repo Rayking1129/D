@@ -5,37 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Navos 本地制作工作台</title>
   <style>
-    :root { --ink:#1d1d1f; --muted:#6e6e73; --line:#e5e5ea; --blue:#0071e3; --bg:#f5f5f7; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--ink); background:var(--bg); }
-    .shell { min-height:100vh; display:grid; grid-template-columns: 360px minmax(0,1fr); }
-    aside { padding:24px; border-right:1px solid var(--line); background:rgba(255,255,255,.75); display:grid; align-content:start; gap:18px; }
-    .brand { display:flex; align-items:center; gap:12px; }
-    .brand img { width:48px; height:48px; border-radius:10px; }
-    .brand h1 { margin:0; font-size:20px; line-height:1.15; }
-    .brand p, .hint, .script p { margin:0; color:var(--muted); line-height:1.55; }
-    main { padding:34px; display:grid; gap:18px; }
-    .hero { display:flex; justify-content:space-between; gap:20px; align-items:start; }
-    h2 { margin:0; font-size:48px; letter-spacing:-.04em; }
-    .card { background:rgba(255,255,255,.88); border:1px solid rgba(255,255,255,.95); border-radius:10px; box-shadow:0 24px 70px rgba(0,0,0,.08); padding:20px; }
-    form, .sync { display:grid; gap:14px; }
-    label { display:grid; gap:8px; font-size:13px; font-weight:800; }
-    input, select, textarea { width:100%; min-height:48px; border:1px solid var(--line); border-radius:9px; padding:12px 14px; font:inherit; background:#fff; outline:none; }
-    textarea { min-height:118px; resize:vertical; line-height:1.55; }
-    button, .btn { border:0; border-radius:999px; min-height:48px; padding:0 18px; background:#1d1d1f; color:#fff; font-weight:850; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
-    button.secondary { background:#fff; color:var(--ink); border:1px solid var(--line); }
-    button:disabled { opacity:.52; cursor:not-allowed; }
-    .grid { display:grid; grid-template-columns: minmax(320px,.8fr) minmax(0,1.2fr); gap:18px; align-items:start; }
-    .scripts { display:grid; gap:12px; }
-    .script { border:1px solid var(--line); border-radius:10px; background:#fff; padding:14px; display:grid; gap:10px; cursor:pointer; }
+    :root {
+      --ink:#1d1d1f; --muted:#6e6e73; --soft:#f5f5f7; --line:#e5e5ea;
+      --blue:#0071e3; --green:#1f8f45; --amber:#b86b00; --red:#c0352b;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:radial-gradient(circle at 70% 0%,#fff 0,#f5f5f7 46%,#ececf1 100%); }
+    .shell { min-height:100vh; display:grid; grid-template-columns:340px minmax(0,1fr); }
+    aside { padding:24px; border-right:1px solid var(--line); background:rgba(255,255,255,.78); backdrop-filter:blur(22px); display:grid; align-content:start; gap:18px; }
+    main { padding:32px; display:grid; gap:18px; }
+    .brand { display:flex; gap:12px; align-items:center; }
+    .brand img { width:52px; height:52px; border-radius:12px; object-fit:cover; box-shadow:0 18px 36px rgba(0,0,0,.16); }
+    h1,h2,h3,p { margin:0; }
+    .brand h1 { font-size:20px; line-height:1.12; letter-spacing:-.02em; }
+    .muted { color:var(--muted); line-height:1.55; }
+    h2 { max-width:980px; font-size:48px; line-height:1.02; letter-spacing:-.055em; }
+    .eyebrow { color:var(--blue); font-weight:900; letter-spacing:.12em; font-size:12px; text-transform:uppercase; }
+    .card { background:rgba(255,255,255,.9); border:1px solid rgba(255,255,255,.96); border-radius:14px; box-shadow:0 24px 70px rgba(0,0,0,.08); padding:18px; }
+    .panel { display:grid; grid-template-columns:minmax(320px,.78fr) minmax(0,1.22fr); gap:18px; align-items:start; }
+    form,.stack { display:grid; gap:14px; }
+    label { display:grid; gap:8px; font-size:13px; font-weight:850; }
+    input,select,textarea { width:100%; min-height:48px; border:1px solid var(--line); border-radius:12px; padding:12px 14px; font:inherit; background:#fff; outline:none; transition:.18s; }
+    textarea { min-height:108px; resize:vertical; line-height:1.55; }
+    input:focus,select:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 4px rgba(0,113,227,.12); }
+    button,.btn { border:0; border-radius:999px; min-height:48px; padding:0 18px; background:#1d1d1f; color:#fff; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; transition:transform .16s, box-shadow .16s, opacity .16s; }
+    button:hover,.btn:hover { transform:translateY(-1px); box-shadow:0 12px 28px rgba(0,0,0,.12); }
+    button:disabled { opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+    button.secondary,.btn.secondary { background:#fff; color:var(--ink); border:1px solid var(--line); }
+    button.blue { background:var(--blue); }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .scripts,.tasks { display:grid; gap:10px; }
+    .script,.task { border:1px solid var(--line); border-radius:13px; background:#fff; padding:14px; display:grid; gap:10px; }
+    .script { cursor:pointer; }
     .script.active { border-color:var(--blue); box-shadow:0 0 0 4px rgba(0,113,227,.12); }
-    .script h3 { margin:0; font-size:17px; }
-    .models { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-    .models button { border-radius:9px; background:#fff; color:var(--ink); border:1px solid var(--line); justify-content:flex-start; }
-    .models button.active { background:#1d1d1f; color:#fff; border-color:#1d1d1f; }
-    .toast { position:fixed; right:22px; bottom:22px; padding:13px 16px; background:#1d1d1f; color:#fff; border-radius:999px; box-shadow:0 18px 44px rgba(0,0,0,.24); opacity:0; transform:translateY(8px); transition:.2s; }
+    .script h3,.task h3 { font-size:16px; }
+    .script p,.task p { color:var(--muted); line-height:1.52; font-size:14px; }
+    .models { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .model { min-height:58px; border-radius:12px; background:#fff; color:var(--ink); border:1px solid var(--line); justify-content:flex-start; text-align:left; padding:0 14px; }
+    .model.active { background:#1d1d1f; color:#fff; border-color:#1d1d1f; }
+    .controls { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .status { width:max-content; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:900; background:#eef0f4; color:#626873; }
+    .status.completed { color:var(--green); background:#e5f6eb; }
+    .status.failed { color:var(--red); background:#fee9e7; }
+    .status.processing,.status.running,.status.pending { color:var(--amber); background:#fff2d7; }
+    video { width:100%; max-height:260px; border-radius:12px; background:#050505; object-fit:contain; }
+    .toast { position:fixed; right:22px; bottom:22px; padding:13px 16px; background:#1d1d1f; color:#fff; border-radius:999px; box-shadow:0 18px 44px rgba(0,0,0,.24); opacity:0; transform:translateY(8px); transition:.2s; z-index:20; }
     .toast.show { opacity:1; transform:none; }
-    @media (max-width: 980px) { .shell, .grid { grid-template-columns:1fr; } h2 { font-size:34px; } }
+    .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:999px; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @media (max-width:1050px) { .shell,.panel { grid-template-columns:1fr; } h2 { font-size:34px; } .models,.controls { grid-template-columns:1fr 1fr; } }
   </style>
 </head>
 <body>
@@ -43,80 +61,184 @@
     <aside>
       <div class="brand">
         <img src="assets/navos-logo.jpg" alt="Navos" />
-        <div><h1>Navos<br />本地制作工作台</h1><p>共用飞书素材库与 OSS</p></div>
+        <div>
+          <h1>Navos<br />本地制作工作台</h1>
+          <p class="muted">共用飞书素材库与 OSS</p>
+        </div>
       </div>
       <form id="loginForm" class="card">
         <label>邮箱<input id="email" type="email" value="admin@creativehub.local" required /></label>
         <label>密码<input id="password" type="password" placeholder="Password" required /></label>
-        <button type="submit">登录制作端</button>
+        <button id="loginButton" type="submit">登录制作端</button>
       </form>
-      <p class="hint">这个页面只用于本机制作团队。满意视频会上传 OSS，并写入同一张飞书素材库，线上审核端随后即可看到。</p>
       <a class="btn secondary" href="/">打开审核系统</a>
+      <p class="muted">本页面只允许本机访问。满意的视频同步到飞书素材库后，线上审核团队会看到同一个素材数据源。</p>
     </aside>
+
     <main>
-      <section class="hero">
-        <div>
-          <h2>按商品生成脚本，上传满意视频，进入审核闭环。</h2>
-          <p class="hint">本地制作端不面向客户上线，只共用数据库与素材源。</p>
-        </div>
+      <section class="stack">
+        <p class="eyebrow">Local Production OS</p>
+        <h2>按商品生成创意脚本，多模型并发出片，满意后进入审核闭环。</h2>
       </section>
-      <section class="grid">
+
+      <section class="panel">
         <form id="scriptForm" class="card">
           <label>选择商品<select id="product" required></select></label>
           <label>创意方向
             <select id="direction">
-              <option>街头穿搭 Streetwear Lifestyle</option>
-              <option>产品故事 Product Story</option>
-              <option>性能展示 Performance Demo</option>
-              <option>UGC 开场钩子 UGC Hook</option>
-              <option>新品预热 Launch Teaser</option>
-              <option>视觉实验 Visual Experiment</option>
+              <option>Streetwear Lifestyle</option>
+              <option>Product Story</option>
+              <option>Performance Demo</option>
+              <option>UGC Hook</option>
+              <option>Launch Teaser</option>
+              <option>Visual Experiment</option>
             </select>
           </label>
-          <label>脚本数量<input id="count" type="number" min="1" max="8" value="3" /></label>
-          <label>补充要求<textarea id="brief" placeholder="例如：15秒竖屏、前三秒强钩子、目标东南亚年轻男性、强调通勤穿搭。"></textarea></label>
-          <button type="submit">生成创意脚本</button>
+          <div class="controls">
+            <label>脚本数量<input id="scriptCount" type="number" min="1" max="8" value="3" /></label>
+            <label>每模型视频数<input id="batchCount" type="number" min="1" max="6" value="1" /></label>
+            <label>时长<input id="duration" type="number" min="3" max="30" value="15" /></label>
+            <label>比例
+              <select id="ratio">
+                <option>9:16</option>
+                <option>16:9</option>
+                <option>1:1</option>
+              </select>
+            </label>
+          </div>
+          <label>补充要求<textarea id="brief" placeholder="例如：前 3 秒强钩子、面向海外 TikTok、强调通勤穿搭、无字幕无口播。"></textarea></label>
+          <button id="scriptButton" type="submit">生成创意脚本</button>
         </form>
-        <div>
-          <section class="card">
-            <h3>创意脚本与视频 Prompt</h3>
+
+        <div class="stack">
+          <section class="card stack">
+            <div class="row" style="justify-content:space-between">
+              <div>
+                <h3>脚本候选</h3>
+                <p class="muted">选择一条脚本后，可同时发给多个视频模型。</p>
+              </div>
+              <button id="videoButton" class="blue" type="button">生成视频任务</button>
+            </div>
             <div class="scripts" id="scripts"></div>
           </section>
-          <section class="card sync">
-            <label>选择视频模型<div class="models" id="models"></div></label>
-            <label>素材标题<input id="assetTitle" required /></label>
-            <label>上传满意视频<input id="video" type="file" accept="video/*" required /></label>
+
+          <section class="card stack">
+            <div>
+              <h3>视频模型</h3>
+              <p class="muted">支持多选，提交后会并发创建任务。</p>
+            </div>
+            <div class="models" id="models"></div>
+          </section>
+
+          <section class="card stack">
+            <div>
+              <h3>生成队列</h3>
+              <p class="muted">完成后可预览，并一键同步为飞书素材库待审核素材。</p>
+            </div>
+            <div class="tasks" id="tasks"></div>
+          </section>
+
+          <section class="card stack">
+            <h3>手动上传兜底</h3>
+            <label>素材标题<input id="manualTitle" /></label>
+            <label>上传满意视频<input id="manualVideo" type="file" accept="video/*" /></label>
             <label>素材标签<input id="tags" value="制作端上传,待审核" /></label>
             <label>最终提示词<textarea id="prompt"></textarea></label>
-            <button id="sync" type="button">上传并同步到飞书素材库</button>
+            <button id="manualSync" type="button">上传并同步到素材库</button>
           </section>
         </div>
       </section>
     </main>
   </div>
+
   <div class="toast" id="toast"></div>
+
   <script>
-    const API_BASE = "";
-    const state = { token: localStorage.getItem("production-token") || "", products: [], scripts: [], selectedScript: 0, model: "Seedance 2.0" };
+    const state = {
+      token: localStorage.getItem("production-token") || "",
+      products: [],
+      scripts: [],
+      selectedScript: 0,
+      selectedModels: new Set(["Seedance2.5", "Seedance2.0-fast"]),
+      tasks: [],
+      poller: null
+    };
+
+    const MODEL_OPTIONS = [
+      { id: "Seedance2.5", name: "Seedance 2.5" },
+      { id: "Seedance2.0", name: "Seedance 2.0" },
+      { id: "Seedance2.0-fast", name: "Seedance Fast" },
+      { id: "kling-2.5-turbo", name: "Kling 2.5 Turbo" },
+      { id: "veo-3.1-fast", name: "Veo 3.1 Fast" },
+      { id: "MiniMax-H3", name: "MiniMax H3" },
+      { id: "happyhorse-t2v", name: "HappyHorse T2V" }
+    ];
+
     const $ = (id) => document.getElementById(id);
-    const toast = (text) => { $("toast").textContent = text; $("toast").classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => $("toast").classList.remove("show"), 2200); };
+    const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char]));
+    const toast = (text) => {
+      $("toast").textContent = text;
+      $("toast").classList.add("show");
+      clearTimeout(toast.t);
+      toast.t = setTimeout(() => $("toast").classList.remove("show"), 2400);
+    };
     async function api(path, options = {}) {
       const headers = { ...(options.headers || {}) };
       if (state.token) headers.Authorization = `Bearer ${state.token}`;
       if (options.body && !(options.body instanceof FormData) && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
-      return fetch(API_BASE + path, { ...options, headers });
+      return fetch(path, { ...options, headers });
+    }
+    function setBusy(button, busy, text) {
+      if (!button) return;
+      if (!button.dataset.label) button.dataset.label = button.textContent;
+      button.disabled = busy;
+      button.innerHTML = busy ? `<span class="spinner"></span>${escapeHtml(text || "处理中")}` : button.dataset.label;
     }
     const activeProducts = () => state.products.filter((p) => !["禁用","停用","disabled","inactive","off"].includes(String(p.status || "启用").trim().toLowerCase()));
+    const selectedProduct = () => activeProducts().find((p) => p.id === $("product").value) || activeProducts()[0];
     function renderProducts() {
-      $("product").innerHTML = activeProducts().map((p) => `<option value="${p.id}">${p.name} · ${p.sku || p.id}</option>`).join("");
+      const products = activeProducts();
+      $("product").innerHTML = products.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} · ${escapeHtml(p.sku || p.id)}</option>`).join("");
     }
-    function productFeatures(product) { return Array.isArray(product?.features) ? product.features.filter(Boolean) : []; }
     function renderModels() {
-      const models = ["Seedance 2.0", "Kling", "Veo", "Sora", "Runway", "Pika"];
-      $("models").innerHTML = models.map((m) => `<button class="${state.model === m ? "active" : ""}" data-model="${m}" type="button">${m}</button>`).join("");
+      $("models").innerHTML = MODEL_OPTIONS.map((model) => `
+        <button type="button" class="model ${state.selectedModels.has(model.id) ? "active" : ""}" data-model="${escapeHtml(model.id)}">
+          ${escapeHtml(model.name)}
+        </button>
+      `).join("");
     }
     function renderScripts() {
-      $("scripts").innerHTML = state.scripts.length ? state.scripts.map((s, i) => `<article class="script ${state.selectedScript === i ? "active" : ""}" data-index="${i}"><h3>${s.title}</h3><p>${s.script}</p><p><strong>Prompt:</strong> ${s.prompt}</p></article>`).join("") : `<p class="hint">先生成脚本。</p>`;
+      $("scripts").innerHTML = state.scripts.length ? state.scripts.map((script, index) => `
+        <article class="script ${state.selectedScript === index ? "active" : ""}" data-index="${index}">
+          <h3>${escapeHtml(script.title)}</h3>
+          <p>${escapeHtml(script.script)}</p>
+          <p><strong>Prompt:</strong> ${escapeHtml(script.prompt)}</p>
+        </article>
+      `).join("") : `<p class="muted">先选择商品并生成脚本。</p>`;
+    }
+    function renderTasks() {
+      $("tasks").innerHTML = state.tasks.length ? state.tasks.map((task) => `
+        <article class="task">
+          <div class="row" style="justify-content:space-between">
+            <div>
+              <h3>${escapeHtml(task.title || "Video Task")}</h3>
+              <p>${escapeHtml(task.modelName || task.model)} · ${task.copy ? `第 ${task.copy} 条` : ""}</p>
+            </div>
+            <span class="status ${escapeHtml(task.status)}">${escapeHtml(statusLabel(task.status))}</span>
+          </div>
+          ${task.url ? `<video src="${escapeHtml(task.url)}" controls playsinline></video>` : ""}
+          ${task.error ? `<p style="color:var(--red)">${escapeHtml(task.error)}</p>` : ""}
+          ${task.message ? `<p>${escapeHtml(task.message)}</p>` : ""}
+          <div class="row">
+            ${task.url ? `<a class="btn secondary" href="${escapeHtml(task.url)}" target="_blank" rel="noreferrer">打开视频</a>` : ""}
+            ${task.url && !task.synced ? `<button type="button" data-sync="${escapeHtml(task.localId)}">同步到素材库</button>` : ""}
+            ${task.synced ? `<span class="status completed">已同步素材 ${escapeHtml(task.assetId || "")}</span>` : ""}
+          </div>
+        </article>
+      `).join("") : `<p class="muted">还没有生成任务。</p>`;
+    }
+    function statusLabel(status) {
+      return { pending:"排队中", processing:"生成中", running:"生成中", completed:"已完成", failed:"失败" }[String(status || "").toLowerCase()] || status || "未知";
     }
     async function loadData() {
       if (!state.token) return;
@@ -127,26 +249,78 @@
       renderProducts();
       toast("已连接飞书数据源");
     }
-    function generateScripts() {
-      const product = activeProducts().find((p) => p.id === $("product").value) || activeProducts()[0];
-      const direction = $("direction").value;
-      const count = Math.max(1, Math.min(8, Number($("count").value || 3)));
-      const brief = $("brief").value.trim();
-      const features = productFeatures(product);
-      const angles = [["3秒强钩子","fast hand-held push-in"],["生活方式转场","match cut from street moment to product close-up"],["材质特写","macro detail of texture and logo"],["人群场景","young creator walking through city light"],["电商可投放","clean product reveal and strong hero frame"],["视觉实验","high contrast kinetic camera movement"]];
-      state.scripts = Array.from({ length: count }, (_, i) => {
-        const angle = angles[i % angles.length];
-        const feature = features[i % Math.max(features.length, 1)] || product?.description || "核心卖点清晰可见";
-        const title = `${product.name} · ${angle[0]}`;
-        const script = `15秒竖屏。0-3秒用${angle[0]}建立注意力，3-10秒围绕「${feature}」展示商品与场景，10-15秒给到商品英雄镜头和可投放结尾。方向：${direction}${brief ? `。补充：${brief}` : ""}`;
-        const prompt = `${angle[1]}, ${product.name} ${product.sku || product.id}, ${direction}, vertical 9:16, 15 seconds, premium realistic commercial video, smooth camera, sharp product detail, no distorted logo, no extra text. ${brief}`;
-        return { title, script, prompt };
-      });
-      state.selectedScript = 0;
-      $("assetTitle").value = state.scripts[0]?.title || "";
-      $("prompt").value = state.scripts[0]?.prompt || "";
-      renderScripts();
-      toast("创意脚本已生成");
+    async function generateScripts() {
+      const product = selectedProduct();
+      if (!product) throw new Error("请先配置可用商品");
+      setBusy($("scriptButton"), true, "生成中");
+      try {
+        const payload = { product, direction: $("direction").value, count: $("scriptCount").value, brief: $("brief").value };
+        const res = await api("/api/production/scripts", { method: "POST", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "脚本生成失败");
+        state.scripts = data.scripts || [];
+        state.selectedScript = 0;
+        $("manualTitle").value = state.scripts[0]?.title || "";
+        $("prompt").value = state.scripts[0]?.prompt || "";
+        renderScripts();
+        toast(data.provider === "deepseek" ? "DeepSeek 已生成脚本" : "DeepSeek key 未配置，已使用本地模板生成");
+      } finally {
+        setBusy($("scriptButton"), false);
+      }
+    }
+    async function createVideos() {
+      if (!state.scripts.length) throw new Error("请先生成脚本");
+      if (!state.selectedModels.size) throw new Error("请至少选择一个模型");
+      const script = state.scripts[state.selectedScript];
+      setBusy($("videoButton"), true, "提交中");
+      toast("已提交生成任务，后台会继续处理");
+      try {
+        const models = [...state.selectedModels].map((id) => MODEL_OPTIONS.find((model) => model.id === id) || { id, name: id });
+        const res = await api("/api/production/videos", {
+          method: "POST",
+          body: JSON.stringify({
+            scripts: [script],
+            models,
+            countPerModel: $("batchCount").value,
+            ratio: $("ratio").value,
+            duration: $("duration").value,
+            resolution: "720p",
+            generateAudio: true
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "视频任务创建失败");
+        state.tasks = [...(data.tasks || []), ...state.tasks];
+        renderTasks();
+        startPolling();
+        toast(`已创建 ${data.tasks.length} 个视频任务`);
+      } finally {
+        setBusy($("videoButton"), false);
+      }
+    }
+    function startPolling() {
+      if (state.poller) return;
+      state.poller = setInterval(pollTasks, 4000);
+      pollTasks();
+    }
+    async function pollTasks() {
+      const active = state.tasks.filter((task) => task.taskId && !["completed","failed"].includes(String(task.status).toLowerCase()));
+      if (!active.length) {
+        clearInterval(state.poller);
+        state.poller = null;
+        return;
+      }
+      await Promise.all(active.map(async (task) => {
+        try {
+          const res = await api(`/api/production/videos/${encodeURIComponent(task.taskId)}`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "轮询失败");
+          Object.assign(task, data.task, { localId: task.localId, model: task.model, modelName: task.modelName, title: task.title, script: task.script, prompt: task.prompt, copy: task.copy });
+        } catch (error) {
+          task.message = error.message;
+        }
+      }));
+      renderTasks();
     }
     async function uploadFiles(files) {
       const fd = new FormData();
@@ -156,53 +330,103 @@
       if (!res.ok) throw new Error(data.error || "上传失败");
       return data.uploads || [];
     }
-    async function syncAsset() {
-      const product = activeProducts().find((p) => p.id === $("product").value);
-      const script = state.scripts[state.selectedScript] || {};
-      const file = $("video").files[0];
+    async function syncPayload(payload, button) {
+      const product = selectedProduct();
       if (!product) throw new Error("请选择商品");
-      if (!file) throw new Error("请上传视频");
-      $("sync").disabled = true;
+      setBusy(button, true, "同步中");
       try {
-        toast("正在上传 OSS...");
-        const uploads = await uploadFiles([file]);
-        const url = uploads[0]?.url;
-        toast("正在写入飞书素材库...");
-        const res = await api("/api/production/assets", { method: "POST", body: JSON.stringify({ productId: product.id, title: $("assetTitle").value || script.title, fileName: file.name, url, size: file.size, model: state.model, direction: $("direction").value, script: script.script || "", prompt: $("prompt").value || script.prompt || "", tags: $("tags").value.split(/[,，]/).map((x) => x.trim()).filter(Boolean) }) });
+        const res = await api("/api/production/assets", { method: "POST", body: JSON.stringify({ productId: product.id, tags: $("tags").value.split(/[,，]/).map((x) => x.trim()).filter(Boolean), direction: $("direction").value, ...payload }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "同步失败");
         toast(`素材 ${data.assetId} 已进入审核库`);
+        return data;
       } finally {
-        $("sync").disabled = false;
+        setBusy(button, false);
       }
     }
+    async function syncGeneratedAsset(localId, button) {
+      const task = state.tasks.find((item) => item.localId === localId);
+      if (!task?.url) throw new Error("视频还没有生成完成");
+      const data = await syncPayload({
+        title: task.title,
+        fileName: `${task.title || "generated-video"}_${task.model || "model"}.mp4`,
+        url: task.url,
+        size: 0,
+        model: task.modelName || task.model,
+        script: task.script || "",
+        prompt: task.prompt || ""
+      }, button);
+      task.synced = true;
+      task.assetId = data.assetId;
+      renderTasks();
+    }
+    async function syncManualAsset() {
+      const file = $("manualVideo").files[0];
+      if (!file) throw new Error("请上传视频");
+      setBusy($("manualSync"), true, "上传中");
+      try {
+        toast("正在上传 OSS...");
+        const uploads = await uploadFiles([file]);
+        const script = state.scripts[state.selectedScript] || {};
+        await syncPayload({
+          title: $("manualTitle").value || script.title || file.name,
+          fileName: file.name,
+          url: uploads[0]?.url,
+          size: file.size,
+          model: "Manual Upload",
+          script: script.script || "",
+          prompt: $("prompt").value || script.prompt || ""
+        }, $("manualSync"));
+      } finally {
+        setBusy($("manualSync"), false);
+      }
+    }
+
     $("loginForm").addEventListener("submit", async (event) => {
       event.preventDefault();
-      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: $("email").value, password: $("password").value }) });
-      const data = await res.json();
-      if (!res.ok) return toast(data.error || "登录失败");
-      state.token = data.token;
-      localStorage.setItem("production-token", data.token);
-      toast("登录成功");
-      loadData();
+      setBusy($("loginButton"), true, "登录中");
+      try {
+        const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: $("email").value, password: $("password").value }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "登录失败");
+        state.token = data.token;
+        localStorage.setItem("production-token", data.token);
+        toast("登录成功");
+        await loadData();
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        setBusy($("loginButton"), false);
+      }
     });
-    $("scriptForm").addEventListener("submit", (event) => { event.preventDefault(); generateScripts(); });
+    $("scriptForm").addEventListener("submit", (event) => { event.preventDefault(); generateScripts().catch((error) => toast(error.message)); });
+    $("videoButton").addEventListener("click", () => createVideos().catch((error) => toast(error.message)));
+    $("manualSync").addEventListener("click", () => syncManualAsset().catch((error) => toast(error.message)));
     $("scripts").addEventListener("click", (event) => {
       const card = event.target.closest(".script");
       if (!card) return;
       state.selectedScript = Number(card.dataset.index || 0);
-      $("assetTitle").value = state.scripts[state.selectedScript]?.title || "";
+      $("manualTitle").value = state.scripts[state.selectedScript]?.title || "";
       $("prompt").value = state.scripts[state.selectedScript]?.prompt || "";
       renderScripts();
     });
     $("models").addEventListener("click", (event) => {
-      const btn = event.target.closest("[data-model]");
-      if (!btn) return;
-      state.model = btn.dataset.model;
+      const button = event.target.closest("[data-model]");
+      if (!button) return;
+      const id = button.dataset.model;
+      if (state.selectedModels.has(id)) state.selectedModels.delete(id);
+      else state.selectedModels.add(id);
       renderModels();
     });
-    $("sync").addEventListener("click", () => syncAsset().catch((error) => toast(error.message)));
+    $("tasks").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-sync]");
+      if (!button) return;
+      syncGeneratedAsset(button.dataset.sync, button).catch((error) => toast(error.message));
+    });
+
     renderModels();
+    renderScripts();
+    renderTasks();
     loadData();
   </script>
 </body>
