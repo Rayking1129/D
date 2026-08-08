@@ -25,7 +25,7 @@
     .panel { display:grid; grid-template-columns:minmax(320px,.78fr) minmax(0,1.22fr); gap:18px; align-items:start; }
     form,.stack { display:grid; gap:14px; }
     label { display:grid; gap:8px; font-size:13px; font-weight:850; }
-    input,select,textarea { width:100%; min-height:48px; border:1px solid var(--line); border-radius:12px; padding:12px 14px; font:inherit; background:#fff; outline:none; transition:.18s; }
+    input,select,textarea { width:100%; min-height:48px; border:1px solid var(--line); border-radius:12px; padding:12px 14px; font:inherit; background:#fff; outline:none; transition:.18s; position:relative; z-index:1; }
     textarea { min-height:108px; resize:vertical; line-height:1.55; }
     input:focus,select:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 4px rgba(0,113,227,.12); }
     button,.btn { border:0; border-radius:999px; min-height:48px; padding:0 18px; background:#1d1d1f; color:#fff; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; transition:transform .16s, box-shadow .16s, opacity .16s; }
@@ -43,7 +43,8 @@
     .models { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
     .model { min-height:58px; border-radius:12px; background:#fff; color:var(--ink); border:1px solid var(--line); justify-content:flex-start; text-align:left; padding:0 14px; }
     .model.active { background:#1d1d1f; color:#fff; border-color:#1d1d1f; }
-    .controls { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .controls { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .script-controls { grid-template-columns:1fr; }
     .status { width:max-content; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:900; background:#eef0f4; color:#626873; }
     .status.completed { color:var(--green); background:#e5f6eb; }
     .status.failed { color:var(--red); background:#fee9e7; }
@@ -53,7 +54,7 @@
     .toast.show { opacity:1; transform:none; }
     .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:999px; animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
-    @media (max-width:1050px) { .shell,.panel { grid-template-columns:1fr; } h2 { font-size:34px; } .models,.controls { grid-template-columns:1fr 1fr; } }
+    @media (max-width:1050px) { .shell,.panel { grid-template-columns:1fr; } h2 { font-size:34px; } .models,.controls { grid-template-columns:1fr 1fr; } .script-controls { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -94,17 +95,8 @@
               <option>Visual Experiment</option>
             </select>
           </label>
-          <div class="controls">
+          <div class="controls script-controls">
             <label>脚本数量<input id="scriptCount" type="number" min="1" max="8" value="3" /></label>
-            <label>每模型视频数<input id="batchCount" type="number" min="1" max="6" value="1" /></label>
-            <label>时长<input id="duration" type="number" min="3" max="30" value="15" /></label>
-            <label>比例
-              <select id="ratio">
-                <option>9:16</option>
-                <option>16:9</option>
-                <option>1:1</option>
-              </select>
-            </label>
           </div>
           <label>补充要求<textarea id="brief" placeholder="例如：前 3 秒强钩子、面向海外 TikTok、强调通勤穿搭、无字幕无口播。"></textarea></label>
           <button id="scriptButton" type="submit">生成创意脚本</button>
@@ -128,6 +120,17 @@
               <p class="muted">支持多选，提交后会并发创建任务。</p>
             </div>
             <div class="models" id="models"></div>
+            <div class="controls">
+              <label>每模型视频数<input id="batchCount" type="number" min="1" max="6" value="1" /></label>
+              <label>视频时长<input id="duration" type="number" min="3" max="30" value="15" /></label>
+              <label>画面比例
+                <select id="ratio">
+                  <option>9:16</option>
+                  <option>16:9</option>
+                  <option>1:1</option>
+                </select>
+              </label>
+            </div>
           </section>
 
           <section class="card stack">
@@ -205,7 +208,10 @@
     }
     function renderProducts() {
       const products = activeProducts();
-      $("product").innerHTML = products.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} · ${escapeHtml(p.sku || p.id)}</option>`).join("");
+      $("product").disabled = !products.length;
+      $("product").innerHTML = products.length
+        ? products.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} · ${escapeHtml(p.sku || p.id)}</option>`).join("")
+        : `<option value="">暂无可用商品，请检查商品库启用状态</option>`;
     }
     function renderModels() {
       $("models").innerHTML = MODEL_OPTIONS.map((model) => `
@@ -249,8 +255,13 @@
     }
     async function loadData() {
       if (!state.token) return;
+      $("product").disabled = true;
+      $("product").innerHTML = `<option value="">商品加载中...</option>`;
       const res = await api("/api/bootstrap");
-      if (!res.ok) return;
+      if (!res.ok) {
+        $("product").innerHTML = `<option value="">商品加载失败，请重新登录</option>`;
+        return;
+      }
       const data = await res.json();
       state.products = data.products || [];
       renderProducts();
