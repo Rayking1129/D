@@ -45,3 +45,8 @@ Do not commit `.env.local`.
 This project can run on Node-capable platforms such as Vercel, Render, or Railway.
 
 For Vercel, `vercel.json` routes all requests to `server.js`. Configure the environment variables in Vercel before production deployment.
+
+## Documentation
+
+- [System overview](docs/SYSTEM_OVERVIEW.md)
+- [Handoff notes](docs/HANDOFF.md)
