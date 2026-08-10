@@ -3,3 +3,10 @@
 tools/
 node_modules/
 .git/
+.agents/
+.claude/
+.trae/
+tasks.json
+batches.json
+skills.json
+skills-lock.json

@@ -50,3 +50,4 @@ For Vercel, `vercel.json` routes all requests to `server.js`. Configure the envi
 
 - [System overview](docs/SYSTEM_OVERVIEW.md)
 - [Handoff notes](docs/HANDOFF.md)
+- [Video model compatibility](docs/MODEL_COMPATIBILITY.md)

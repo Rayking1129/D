@@ -377,6 +377,7 @@ https://navos-creative-hub.vercel.app/production.html
 请先阅读：
 - docs/SYSTEM_OVERVIEW.md
 - docs/HANDOFF.md
+- docs/MODEL_COMPATIBILITY.md
 - server.js
 - index.html
 - production.html
@@ -395,6 +396,7 @@ https://navos-creative-hub.vercel.app/production.html
 - 同一素材修改时素材ID不变，版本号递增
 - 审核通过后不能再次审批，只能更新发布状态
 - 制作台生成视频时必须把商品封面图和详情图作为 image_url 参考图传给模型
+- 制作台只暴露一套视频设置；不同模型的分辨率、时长、比例、参考图格式必须在后端适配。MiniMax-H3 选 720p 时实际传 768P，选 15s 时必须实际传 duration=15。
 
 修改代码后必须至少运行：
 - node --check server.js

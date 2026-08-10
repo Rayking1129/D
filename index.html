@@ -271,6 +271,21 @@
       box-shadow: var(--shadow-soft);
       backdrop-filter: var(--blur);
       -webkit-backdrop-filter: var(--blur);
+      text-align: left;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .metric:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0, 113, 227, .24);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, .10);
+    }
+
+    .metric.active {
+      border-color: rgba(0, 113, 227, .55);
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,255,.92));
+      box-shadow: 0 0 0 4px rgba(0, 113, 227, .12), var(--shadow-soft);
     }
 
     .metric span {
@@ -2276,6 +2291,7 @@
       currentUser: null,
       query: "",
       productFilter: "all",
+      statusFilter: "all",
       selectedProductId: "",
       productGalleryIndex: 0,
     };
@@ -2650,7 +2666,10 @@
         const searchable = [asset.title, asset.file, asset.scene, product.name, product.sku, record.comment, ...record.tags].join(" ").toLowerCase();
         const matchQuery = !q || searchable.includes(q);
         const matchProduct = state.productFilter === "all" || record.productId === state.productFilter;
-        return matchQuery && matchProduct;
+        const matchStatus =
+          state.statusFilter === "all" ||
+          (state.statusFilter === "published" ? record.published : record.status === state.statusFilter);
+        return matchQuery && matchProduct && matchStatus;
       }).sort((a, b) => {
         const recordA = state.records[a.file] || {};
         const recordB = state.records[b.file] || {};
@@ -2672,20 +2691,20 @@
       }, { pending: 0, approved: 0, revision: 0, published: 0 });
 
       const metrics = [
-        ["供给素材量", total, `最新版本素材 · 共 ${displayVersionCount} 个版本`, "#111"],
-        ["审核通过", counts.approved, `${rate(counts.approved, total)} 通过率`, "var(--green)"],
-        ["已发布", counts.published, `${rate(counts.published, total)} 发布率`, "var(--blue)"],
-        ["需要修改", counts.revision, `${rate(counts.revision, total)} 返修率`, "var(--amber)"],
-        ["待审核", counts.pending, `${rate(counts.pending, total)} 待处理`, "#5f6671"]
+        ["\u4f9b\u7ed9\u7d20\u6750\u91cf", total, `\u6700\u65b0\u7248\u672c\u7d20\u6750 · \u5171 ${displayVersionCount} \u4e2a\u7248\u672c`, "#111", "all"],
+        ["\u5ba1\u6838\u901a\u8fc7", counts.approved, `${rate(counts.approved, total)} \u901a\u8fc7\u7387`, "var(--green)", "approved"],
+        ["\u5df2\u53d1\u5e03", counts.published, `${rate(counts.published, total)} \u53d1\u5e03\u7387`, "var(--blue)", "published"],
+        ["\u9700\u8981\u4fee\u6539", counts.revision, `${rate(counts.revision, total)} \u8fd4\u4fee\u7387`, "var(--amber)", "revision"],
+        ["\u5f85\u5ba1\u6838", counts.pending, `${rate(counts.pending, total)} \u5f85\u5904\u7406`, "#5f6671", "pending"]
       ];
 
-      $("dashboard").innerHTML = metrics.map(([label, value, sub, color]) => `
-        <article class="metric">
+      $("dashboard").innerHTML = metrics.map(([label, value, sub, color, filter]) => `
+        <button class="metric ${state.statusFilter === filter ? "active" : ""}" type="button" data-metric-filter="${filter}" aria-pressed="${state.statusFilter === filter}">
           <span>${label}</span>
           <strong>${value}</strong>
           <small>${sub}</small>
-          <div class="bar"><i style="--w:${Math.max(3, value / total * 100)}%; --c:${color}"></i></div>
-        </article>
+          <div class="bar"><i style="--w:${Math.max(3, value / Math.max(total, 1) * 100)}%; --c:${color}"></i></div>
+        </button>
       `).join("");
     }
 
@@ -3298,10 +3317,19 @@
         return;
       }
 
+      const metricTarget = event.target.closest("[data-metric-filter]");
+      if (metricTarget) {
+        const nextFilter = metricTarget.dataset.metricFilter || "all";
+        state.statusFilter = state.statusFilter === nextFilter ? "all" : nextFilter;
+        render();
+        return;
+      }
+
       const viewProductAssets = event.target.closest("[data-action='view-product-assets']");
       if (viewProductAssets) {
         const nextFilter = viewProductAssets.dataset.product || "all";
         state.productFilter = activeProducts().some((product) => product.id === nextFilter) ? nextFilter : "all";
+        state.statusFilter = "all";
         state.view = "grid";
         render();
         showToast("已筛选该商品的关联素材");
