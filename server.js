@@ -1034,7 +1034,7 @@ const MODEL_SPECS = {
   "kling-2.6": { resolutions: ["720p","1080p"], ratios: ["16:9","9:16","1:1"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 },
   "kling-2.5-turbo": { resolutions: ["720p","1080p"], ratios: ["16:9","9:16","1:1"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 },
   "kling-2.1": { resolutions: ["720p","1080p"], ratios: ["16:9","9:16","1:1"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 },
-  "PixVerse-V6": { resolutions: ["360p","540p","720p","1080p"], ratios: ["16:9","4:3","1:1","3:4","9:16"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 }
+  "PixVerse-V6": { resolutions: ["360p","540p","720p","1080p"], ratios: ["16:9","4:3","1:1","3:4","9:16"], durationRange: [1,15], defaultResolution: "720p", defaultDuration: 5 }
 };
 
 function getModelSpec(modelId) {
@@ -1095,9 +1095,6 @@ function normalizeRatioForModel(modelId, requestedRatio, spec, hasReferenceImage
 }
 
 function normalizeDurationForModel(modelId, requestedDuration, spec) {
-  if (isPixVerseModel(modelId)) {
-    return closestAllowedDuration(requestedDuration, [5, 8], spec.defaultDuration);
-  }
   if (/^veo-3\.1/i.test(modelId)) {
     return closestAllowedDuration(requestedDuration, [4, 6, 8], spec.defaultDuration);
   }
