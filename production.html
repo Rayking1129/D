@@ -728,11 +728,24 @@
       state.poller = setInterval(pollTasks, 4000);
       pollTasks();
     }
+    function taskSignature(t) {
+      return JSON.stringify({
+        status: t.status,
+        url: t.url,
+        error: t.error,
+        message: t.message,
+        updatedAt: t.updatedAt,
+        synced: t.synced,
+        assetId: t.assetId
+      });
+    }
     async function pollTasks() {
       const active = state.tasks.filter((t) => t.taskId && !["completed","failed"].includes(String(t.status).toLowerCase()));
       if (!active.length) { clearInterval(state.poller); state.poller = null; return; }
+      let changed = false;
       await Promise.all(active.map(async (t) => {
         try {
+          const before = taskSignature(t);
           const r = await api(`/api/production/videos/${encodeURIComponent(t.taskId)}`);
           const d = await r.json();
           if (!r.ok) throw new Error(d.error || "轮询失败");
@@ -744,9 +757,13 @@
             productRecordId: t.productRecordId,
             productName: t.productName
           });
-        } catch (e) { t.message = e.message; }
+          if (before !== taskSignature(t)) changed = true;
+        } catch (e) {
+          if (t.message !== e.message) changed = true;
+          t.message = e.message;
+        }
       }));
-      renderTasks();
+      if (changed) renderTasks();
     }
 
     async function syncTask(localId, btn) {

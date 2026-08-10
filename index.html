@@ -3125,20 +3125,21 @@
 
       $("assetPublished").addEventListener("change", (event) => completeReview({ published: event.target.checked }));
       if (!isApproved) {
-        $("assetComment").addEventListener("input", (event) => updateRecord({ comment: event.target.value }, false, false));
-        $("assetComment").addEventListener("blur", () => {
+        const commentFile = asset.file;
+        const initialComment = record.comment || "";
+        let commentDirty = false;
+        $("assetComment").addEventListener("input", (event) => {
+          commentDirty = event.target.value !== initialComment;
+          updateRecord({ comment: event.target.value }, false, false);
+        });
+        $("assetComment").addEventListener("blur", (event) => {
+          if (!commentDirty) return;
+          if (event.relatedTarget?.closest?.(".drawer-actions")) return;
+          const pendingRecord = state.records[commentFile];
+          if (!pendingRecord || (pendingRecord.comment || "") === initialComment) return;
           save("");
-          runWithFeedback(
-            () => persistRecord(state.selected),
-            {
-              loadingTitle: "正在保存修改意见",
-              loadingMessage: "系统正在同步到飞书数据库，请稍候。",
-              successTitle: "修改意见已保存",
-              successMessage: "制作团队可以在素材详情中查看这条反馈。",
-              errorTitle: "修改意见保存失败",
-              autoClose: 1200
-            }
-          ).catch(() => {});
+          commentDirty = false;
+          persistRecord(commentFile).catch(() => showToast("修改意见暂未同步，请稍后重试"));
           render();
         });
         $("quickApprove").addEventListener("click", () => completeReview({ status: "approved" }));
@@ -3631,7 +3632,7 @@
 
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {
-        refreshBackendData({ force: true }).catch(() => {});
+        refreshBackendData().catch(() => {});
       }
     });
 
