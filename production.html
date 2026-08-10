@@ -95,6 +95,16 @@
     /* Task queue */
     .task-card { border:1px solid var(--line); border-radius:12px; background:#fff; padding:14px; display:flex; flex-direction:column; gap:10px; }
     .task-card video { width:100%; max-height:220px; border-radius:10px; background:#050505; object-fit:contain; }
+    .history-toolbar { display:grid; grid-template-columns:minmax(220px,1fr) 180px; gap:10px; }
+    .history-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; }
+    .history-card { border:1px solid var(--line); border-radius:14px; background:#fff; overflow:hidden; box-shadow:0 12px 34px rgba(0,0,0,.05); display:flex; flex-direction:column; }
+    .history-card video { width:100%; aspect-ratio:16/10; background:#050505; object-fit:contain; }
+    .history-body { padding:14px; display:flex; flex-direction:column; gap:10px; }
+    .history-meta { display:flex; flex-wrap:wrap; gap:6px; }
+    .history-prompt { margin:0; padding:10px; border:1px solid var(--line); border-radius:10px; background:#f9f9fb; color:var(--ink); font-family:"SF Mono","Cascadia Code","Consolas",monospace; font-size:11px; line-height:1.5; white-space:pre-wrap; max-height:120px; overflow:auto; }
+    .sync-badge { display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:5px 10px; font-size:11px; font-weight:850; background:#fff2d7; color:var(--amber); }
+    .sync-badge.synced { background:#e5f6eb; color:var(--green); }
+    .sync-badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
     .status { display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:800; background:#eef0f4; color:#626873; white-space:nowrap; }
     .status::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
     .status.completed { color:var(--green); background:#e5f6eb; }
@@ -219,6 +229,29 @@
         </div>
       </section>
 
+      <!-- History -->
+      <section class="card">
+        <div class="section-hdr row btw">
+          <div>
+            <p class="eyebrow">Generation History</p>
+            <h2>历史生成视频</h2>
+          </div>
+          <span id="historySummary" class="muted" style="font-size:12px;"></span>
+        </div>
+        <div class="history-toolbar">
+          <input id="historySearch" placeholder="搜索标题、商品、模型或提示词" />
+          <select id="historySyncFilter">
+            <option value="all">全部视频</option>
+            <option value="unsynced">未同步</option>
+            <option value="synced">已同步</option>
+            <option value="completed">已完成</option>
+          </select>
+        </div>
+        <div id="historyGrid" class="history-grid">
+          <div class="empty" style="text-align:center;padding:40px 20px;color:var(--muted);"><p>还没有历史视频。</p></div>
+        </div>
+      </section>
+
       <!-- Manual Upload -->
       <section class="card">
         <h3>手动上传兜底</h3>
@@ -254,6 +287,8 @@
       ],
       selectedModelIds: new Set(["Seedance2.0-lite", "MiniMax-H3"]),
       tasks: [],
+      historyQuery: "",
+      historySyncFilter: "all",
       poller: null
     };
 
@@ -310,6 +345,28 @@
       return { pending:"排队中", processing:"生成中", running:"生成中", completed:"已完成", failed:"失败" }[String(s || "").toLowerCase()] || s || "未知";
     }
     function selectedAssets() { return state.assets.filter((a) => a.selectedForVideo); }
+    function taskTimeValue(t) {
+      const value = Date.parse(t.updatedAt || t.completedAt || t.createdAt || "");
+      return Number.isFinite(value) ? value : 0;
+    }
+    function formatTaskTime(t) {
+      const value = taskTimeValue(t);
+      if (!value) return "-";
+      return new Date(value).toLocaleString("zh-CN", { month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+    function historyTasks() {
+      const query = state.historyQuery.trim().toLowerCase();
+      return [...state.tasks]
+        .sort((a, b) => taskTimeValue(b) - taskTimeValue(a))
+        .filter((t) => {
+          if (state.historySyncFilter === "synced" && !t.synced) return false;
+          if (state.historySyncFilter === "unsynced" && t.synced) return false;
+          if (state.historySyncFilter === "completed" && String(t.status).toLowerCase() !== "completed") return false;
+          if (!query) return true;
+          const text = [t.title, t.productName, t.modelName, t.model, t.prompt, t.assetId, t.localId].filter(Boolean).join("\n").toLowerCase();
+          return text.includes(query);
+        });
+    }
 
     // ── Render ──
     function renderProductChip() {
@@ -397,6 +454,7 @@
       $("taskSummary").textContent = tasks.length ? `${tasks.length} 任务` : "";
       if (!tasks.length) {
         $("taskQueue").innerHTML = '<div class="empty" style="text-align:center;padding:40px 20px;color:var(--muted);"><p>还没有生成任务。</p></div>';
+        renderHistory();
         return;
       }
       $("taskQueue").innerHTML = tasks.map((t) => `
@@ -416,6 +474,44 @@
             ${t.status === "failed" ? `<button class="secondary small" data-retry="${html(t.localId)}">重试</button>` : ""}
           </div>
         </div>`).join("");
+      renderHistory();
+    }
+    function renderHistory() {
+      const list = historyTasks();
+      const syncedCount = state.tasks.filter((t) => t.synced).length;
+      $("historySummary").textContent = state.tasks.length ? `${list.length} / ${state.tasks.length} \u6761 \u00b7 \u5df2\u540c\u6b65 ${syncedCount}` : "";
+      if (!list.length) {
+        $("historyGrid").innerHTML = '<div class="empty" style="text-align:center;padding:40px 20px;color:var(--muted);"><p>\u6ca1\u6709\u5339\u914d\u7684\u5386\u53f2\u89c6\u9891\u3002</p></div>';
+        return;
+      }
+      $("historyGrid").innerHTML = list.map((t) => {
+        const completed = String(t.status).toLowerCase() === "completed";
+        return `
+          <article class="history-card">
+            ${t.url && completed ? `<video src="${html(t.url)}" controls playsinline preload="metadata"></video>` : `<div class="empty" style="min-height:180px;display:grid;place-items:center;color:var(--muted);">${taskStatusLabel(t.status)}</div>`}
+            <div class="history-body">
+              <div class="row btw">
+                <div>
+                  <h4 style="font-size:15px;">${html(t.title || "Video Task")}</h4>
+                  <span class="muted" style="font-size:11px;">${html(t.productName || "")}</span>
+                </div>
+                <span class="sync-badge ${t.synced ? "synced" : ""}">${t.synced ? "\u5df2\u540c\u6b65" : "\u672a\u540c\u6b65"}</span>
+              </div>
+              <div class="history-meta">
+                <span class="chip">${html(t.modelName || t.model || "Model")}</span>
+                <span class="chip">${taskStatusLabel(t.status)}</span>
+                <span class="chip">${formatTaskTime(t)}</span>
+                ${t.assetId ? `<span class="chip">\u7d20\u6750ID ${html(t.assetId)}</span>` : ""}
+              </div>
+              <pre class="history-prompt">${html(t.prompt || "\u6682\u65e0\u63d0\u793a\u8bcd\u8bb0\u5f55")}</pre>
+              <div class="row">
+                ${t.url && completed ? `<a class="btn secondary small" href="${html(t.url)}" target="_blank" rel="noreferrer">\u6253\u5f00\u89c6\u9891</a>` : ""}
+                <button class="secondary small" data-copy-prompt="${html(t.localId)}">\u590d\u5236\u63d0\u793a\u8bcd</button>
+                ${t.url && completed && !t.synced ? `<button class="green small" data-sync="${html(t.localId)}">\u540c\u6b65\u5230\u7d20\u6750\u5e93</button>` : ""}
+              </div>
+            </div>
+          </article>`;
+      }).join("");
     }
 
     // ── Data Loading ──
@@ -842,6 +938,12 @@
         if (asset?.prompt) navigator.clipboard.writeText(asset.prompt).then(() => toast("已复制 prompt"));
         return;
       }
+      const promptCopy = e.target.closest("[data-copy-prompt]");
+      if (promptCopy) {
+        const task = state.tasks.find((t) => t.localId === promptCopy.dataset.copyPrompt);
+        if (task?.prompt) navigator.clipboard.writeText(task.prompt).then(() => toast("已复制提示词"));
+        return;
+      }
       // Delete asset
       const delBtn = e.target.closest("[data-delete]");
       if (delBtn) {
@@ -869,6 +971,8 @@
 
     $("generateVideosBtn").addEventListener("click", () => createVideos().catch((e) => toast(e.message)));
     $("manualSync").addEventListener("click", () => manualSync().catch((e) => toast(e.message)));
+    $("historySearch").addEventListener("input", (e) => { state.historyQuery = e.target.value || ""; renderHistory(); });
+    $("historySyncFilter").addEventListener("change", (e) => { state.historySyncFilter = e.target.value || "all"; renderHistory(); });
 
     // Inline edit: title (contenteditable) and prompt textarea
     document.addEventListener("input", (e) => {
