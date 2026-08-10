@@ -2635,6 +2635,36 @@
       return { pending: "pending", approved: "pass", revision: "revise" }[status] || "pending";
     }
 
+    function isModelOrProcessTag(tag) {
+      const value = String(tag || "").trim();
+      return !value ||
+        /seedance|minimax|kling|veo|sora|runway|pika|happyhorse|h3|lite|fast/i.test(value) ||
+        /制作端上传|待审核|审核通过|建议修改|已发布|未发布|参考素材|商品图/.test(value);
+    }
+
+    function creativeTypesForAsset(asset) {
+      const record = state.records[asset.file] || {};
+      const text = [asset.title, asset.scene, ...(record.tags || [])].join(" ");
+      const mapped = [];
+      if (/校园|college|campus|after class/i.test(text)) mapped.push("校园街头");
+      if (/多巴胺|dopamine/i.test(text)) mapped.push("多巴胺色彩");
+      if (/街头|street|city|skater|rooftop|subway|hiphop/i.test(text)) mapped.push("潮流街头");
+      if (/ugc|review|评测|honest review|micro-review/i.test(text)) mapped.push("UGC评测");
+      if (/asmr|unboxing|开箱|解压/i.test(text)) mapped.push("ASMR开箱");
+      if (/皮革|纹理|材质|macro|material|texture/i.test(text)) mapped.push("材质特写");
+      if (/科技|tech|cyber|laser|gravity|magnetic|ferro/i.test(text)) mapped.push("科技视觉");
+      if (/篮球|运动|训练|athlete|bball|practice|sports/i.test(text)) mapped.push("运动场景");
+      if (/夜|dark|night|neon/i.test(text)) mapped.push("夜景氛围");
+      if (/情侣|情绪|couple|emotional/i.test(text)) mapped.push("情绪叙事");
+      if (/实验|视觉|kaleidoscope|podium|paint|monument/i.test(text)) mapped.push("视觉实验");
+
+      const explicit = [asset.scene, ...(record.tags || [])]
+        .map((tag) => String(tag || "").trim())
+        .filter((tag) => tag && !isModelOrProcessTag(tag));
+      const types = [...new Set([...mapped, ...explicit])];
+      return types.length ? types.slice(0, 3) : ["创意素材"];
+    }
+
     function isProductActive(product) {
       const status = String(product?.status || "启用").trim().toLowerCase();
       return !["禁用", "停用", "disabled", "inactive", "off"].includes(status);
@@ -2945,6 +2975,7 @@
     function renderGrid(list) {
       $("assetGrid").innerHTML = list.map((asset) => {
         const record = state.records[asset.file];
+        const creativeTypes = creativeTypesForAsset(asset);
         return `
           <article class="asset-card ${state.selected === asset.file ? "selected" : ""}" data-action="open-asset" data-file="${asset.file}">
             ${mediaElement(assetSrc(asset), "card-video")}
@@ -2955,13 +2986,12 @@
               </div>
               <div class="meta">
                 <span>${escapeHtml(getAssetProduct(asset).name)}</span>
-                <span>${escapeHtml(asset.scene)}</span>
+                <span>${creativeTypes.map(escapeHtml).join(" / ")}</span>
                 <span>${escapeHtml(asset.version || record.version || "V1")}</span>
-                <span>${formatSize(asset.size)}</span>
                 <span>更新 ${formatDate(asset.updatedAt || record.updatedAt)}</span>
                 ${record.published ? `<span class="pill published">已发布</span>` : ""}
               </div>
-              <div class="tags">${record.tags.map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join("")}</div>
+              <div class="tags">${creativeTypes.map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join("")}</div>
               <div class="card-actions">
                 <button class="btn secondary" data-action="open-asset" data-file="${asset.file}">详情</button>
                 <a class="btn" href="${assetSrc(asset)}" download>下载</a>
