@@ -30,7 +30,9 @@ const MODEL_CONFIG = {
   appSecret: process.env.MODEL_SQUARE_APP_SECRET,
   deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
   deepseekApiKey: process.env.DEEPSEEK_API_KEY,
-  deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-chat"
+  deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-chat",
+  pixverseBaseUrl: process.env.PIXVERSE_BASE_URL || "https://app-api.pixverse.ai",
+  pixverseApiKey: process.env.PIXVERSE_API_KEY
 };
 
 let tenantTokenCache = null;
@@ -690,6 +692,108 @@ async function modelSquare(pathname, options = {}) {
   return data;
 }
 
+async function pixverse(pathname, options = {}) {
+  if (!MODEL_CONFIG.pixverseApiKey) throw new Error("pixverse_not_configured");
+  const response = await fetch(`${cleanBaseUrl(MODEL_CONFIG.pixverseBaseUrl)}${pathname}`, {
+    ...options,
+    headers: {
+      "API-KEY": MODEL_CONFIG.pixverseApiKey,
+      "Ai-trace-id": crypto.randomUUID(),
+      ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json; charset=utf-8" }),
+      ...(options.headers || {})
+    }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ErrCode) {
+    throw new Error(data.ErrMsg || data.message || `pixverse_failed_${response.status}`);
+  }
+  return data;
+}
+
+function isPixVerseModel(modelId) {
+  return /^PixVerse/i.test(String(modelId || ""));
+}
+
+function pixverseModelName(modelId) {
+  const value = String(modelId || "");
+  if (/v6/i.test(value)) return "v6";
+  if (/v4\.5/i.test(value)) return "v4.5";
+  if (/v4/i.test(value)) return "v4";
+  return "v6";
+}
+
+function normalizePixVerseStatus(value) {
+  const status = String(value ?? "").toLowerCase();
+  if (status === "1" || status === "success" || status === "completed") return "completed";
+  if (status === "5" || status === "pending" || status === "processing" || status === "running") return "processing";
+  if (status === "7" || status === "8" || status === "failed" || status === "error") return "failed";
+  return "processing";
+}
+
+async function uploadPixVerseImage(imageUrl) {
+  const form = new FormData();
+  form.append("image_url", imageUrl);
+  const data = await pixverse("/openapi/v2/image/upload", {
+    method: "POST",
+    body: form
+  });
+  const imgId = data.Resp?.img_id || data.Resp?.imgId || data.data?.img_id || "";
+  if (!imgId) throw new Error("pixverse_image_upload_no_img_id");
+  return imgId;
+}
+
+function buildPixVerseVideoBody(job) {
+  const body = {
+    model: pixverseModelName(job.meta.model),
+    prompt: String(job.pixverse.prompt || "").slice(0, 2048),
+    aspect_ratio: job.pixverse.ratio,
+    duration: job.pixverse.duration,
+    quality: job.pixverse.quality,
+    motion_mode: "normal"
+  };
+  return body;
+}
+
+function normalizePixVerseTask(response, meta = {}) {
+  const data = response?.Resp || response?.data || response || {};
+  const videoId = data.video_id || data.videoId || data.id || meta.taskId || "";
+  const status = normalizePixVerseStatus(data.status || data.state || meta.status);
+  const urls = [...new Set(collectUrls(data))];
+  return {
+    ...meta,
+    taskId: videoId ? `pixverse:${videoId}` : "",
+    providerTaskId: videoId,
+    status,
+    urls,
+    url: urls[0] || "",
+    message: data.message || data.ErrMsg || ""
+  };
+}
+
+async function createPixVerseVideoTask(job) {
+  const body = buildPixVerseVideoBody(job);
+  let endpoint = "/openapi/v2/video/text/generate";
+  if (job.pixverse.referenceImages.length) {
+    body.img_id = await uploadPixVerseImage(job.pixverse.referenceImages[0]);
+    endpoint = "/openapi/v2/video/img/generate";
+  }
+  const response = await pixverse(endpoint, {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+  const task = normalizePixVerseTask(response, job.meta);
+  task.requestBody = body;
+  return task;
+}
+
+async function getPixVerseTask(taskId) {
+  const providerTaskId = String(taskId || "").replace(/^pixverse:/, "");
+  const response = await pixverse(`/openapi/v2/video/result/${encodeURIComponent(providerTaskId)}`, {
+    method: "GET"
+  });
+  return normalizePixVerseTask(response, { taskId: `pixverse:${providerTaskId}`, providerTaskId });
+}
+
 function collectUrls(value, urls = []) {
   if (!value) return urls;
   if (typeof value === "string") {
@@ -929,7 +1033,8 @@ const MODEL_SPECS = {
   "kling-o1": { resolutions: ["720p","1080p"], ratios: ["16:9","9:16","1:1"], durationRange: [3,15], defaultResolution: "720p", defaultDuration: 10 },
   "kling-2.6": { resolutions: ["720p","1080p"], ratios: ["16:9","9:16","1:1"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 },
   "kling-2.5-turbo": { resolutions: ["720p","1080p"], ratios: ["16:9","9:16","1:1"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 },
-  "kling-2.1": { resolutions: ["720p","1080p"], ratios: ["16:9","9:16","1:1"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 }
+  "kling-2.1": { resolutions: ["720p","1080p"], ratios: ["16:9","9:16","1:1"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 },
+  "PixVerse-V6": { resolutions: ["360p","540p","720p","1080p"], ratios: ["16:9","4:3","1:1","3:4","9:16"], durationRange: [5,10], defaultResolution: "720p", defaultDuration: 5 }
 };
 
 function getModelSpec(modelId) {
@@ -973,6 +1078,10 @@ function normalizeResolutionForModel(modelId, requestedResolution, spec) {
     if (requested === "768P" || lower === "2k") return spec.resolutions.includes("1080p") ? "1080p" : spec.defaultResolution;
     if (lower === "4k" && !spec.resolutions.includes("4k")) return spec.resolutions.includes("1080p") ? "1080p" : spec.defaultResolution;
   }
+  if (isPixVerseModel(modelId)) {
+    if (lower === "480p") return "540p";
+    if (lower === "2k" || lower === "4k") return "1080p";
+  }
   return spec.defaultResolution;
 }
 
@@ -986,6 +1095,9 @@ function normalizeRatioForModel(modelId, requestedRatio, spec, hasReferenceImage
 }
 
 function normalizeDurationForModel(modelId, requestedDuration, spec) {
+  if (isPixVerseModel(modelId)) {
+    return closestAllowedDuration(requestedDuration, [5, 8], spec.defaultDuration);
+  }
   if (/^veo-3\.1/i.test(modelId)) {
     return closestAllowedDuration(requestedDuration, [4, 6, 8], spec.defaultDuration);
   }
@@ -1029,15 +1141,27 @@ async function createVideoTasks(payload) {
           contentItems.push(buildImageContentItem(modelId, url));
         });
 
-        const body = { model: modelId, content: contentItems, duration };
-        if (resolution) body.resolution = resolution;
-        if (ratio) body.ratio = ratio;
-        if (/^Seedance2\.5/i.test(modelId)) {
-          body.extra_params = { output_format: "mp4" };
+        let body = { model: modelId, content: contentItems, duration };
+        const pixverseJob = isPixVerseModel(modelId) ? {
+          prompt: contentText,
+          referenceImages,
+          ratio,
+          quality: resolution,
+          duration
+        } : null;
+        if (!pixverseJob) {
+          if (resolution) body.resolution = resolution;
+          if (ratio) body.ratio = ratio;
+          if (/^Seedance2\.5/i.test(modelId)) {
+            body.extra_params = { output_format: "mp4" };
+          }
+        } else {
+          body = buildPixVerseVideoBody({ meta: { model: modelId }, pixverse: pixverseJob });
         }
 
         jobs.push({
           body,
+          pixverse: pixverseJob,
           meta: {
             localId: crypto.randomUUID(),
             model: modelId,
@@ -1068,6 +1192,7 @@ async function createVideoTasks(payload) {
   });
 
   const results = await Promise.allSettled(jobs.map(async (job) => {
+    if (job.pixverse) return createPixVerseVideoTask(job);
     const response = await modelSquare("/tecpower/ai/openapi/video/create", {
       method: "POST",
       body: JSON.stringify(job.body)
@@ -1084,6 +1209,9 @@ async function createVideoTasks(payload) {
 }
 
 async function getVideoTask(taskId) {
+  if (String(taskId || "").startsWith("pixverse:")) {
+    return getPixVerseTask(taskId);
+  }
   const response = await modelSquare(`/tecpower/ai/openapi/video/task?taskId=${encodeURIComponent(taskId)}`, {
     method: "GET"
   });
@@ -1333,6 +1461,7 @@ async function handleApi(req, res, url) {
       tasks.forEach((task) => upsertTask({
         localId: task.localId,
         taskId: task.taskId || "",
+        providerTaskId: task.providerTaskId || "",
         model: task.model || "",
         modelName: task.modelName || "",
         title: task.title || "",
@@ -1348,6 +1477,9 @@ async function handleApi(req, res, url) {
         urls: task.urls || [],
         message: task.message || "",
         error: task.error || "",
+        requested: task.requested || {},
+        resolved: task.resolved || {},
+        requestBody: task.requestBody || {},
         synced: false,
         assetId: "",
         batchId: body.batchId || ""

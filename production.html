@@ -247,6 +247,7 @@
         { id: "Seedance2.0-lite", name: "Seedance Lite" },
         { id: "kling-2.5-turbo", name: "Kling 2.5 Turbo" },
         { id: "veo-3.1-fast", name: "Veo 3.1 Fast" },
+        { id: "PixVerse-V6", name: "PixVerse V6", hint: "Fast text/image-to-video, 360p-1080p, 9:16/16:9/1:1, strong prompt adherence" },
         { id: "MiniMax-H3", name: "MiniMax H3" },
         { id: "happyhorse-t2v", name: "HappyHorse T2V" },
         { id: "Seedance2.0", name: "Seedance 2.0" }
@@ -379,7 +380,7 @@
     function renderModels() {
       $("modelChips").innerHTML = state.models.map((m) => {
         const active = state.selectedModelIds.has(m.id);
-        return `<button class="model-chip ${active ? "active" : ""}" data-model="${html(m.id)}">${html(m.name)}</button>`;
+        return `<button class="model-chip ${active ? "active" : ""}" data-model="${html(m.id)}" title="${html(m.hint || m.name)}">${html(m.name)}</button>`;
       }).join("");
     }
     function updateVideoBtn() {
