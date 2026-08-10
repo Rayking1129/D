@@ -3093,7 +3093,7 @@
         </section>
       `;
 
-      $("assetPublished").addEventListener("change", (event) => updateRecord({ published: event.target.checked }));
+      $("assetPublished").addEventListener("change", (event) => completeReview({ published: event.target.checked }));
       if (!isApproved) {
         $("assetComment").addEventListener("input", (event) => updateRecord({ comment: event.target.value }, false, false));
         $("assetComment").addEventListener("blur", () => {
@@ -3177,34 +3177,64 @@
       const completedAsset = assets.find((asset) => asset.file === state.selected);
       updateRecord(patch, false, false, false);
       save("");
-      const actionMessage = patch.status === "approved" ? "审核通过" : "修改意见已提交";
+      const actionMessage = patch.status === "approved"
+        ? "\u5ba1\u6838\u901a\u8fc7"
+        : patch.status === "revision"
+          ? "\u4fee\u6539\u610f\u89c1\u5df2\u63d0\u4ea4"
+          : patch.published
+            ? "\u5df2\u53d1\u5e03"
+            : "\u53d1\u5e03\u72b6\u6001\u5df2\u66f4\u65b0";
       state.lastCompleted = completedAsset ? {
         title: completedAsset.title,
         file: completedAsset.file,
         status: state.records[completedAsset.file].status,
         comment: state.records[completedAsset.file].comment
       } : null;
-      const next = getNextAsset();
+      const next = getNextPendingAsset(completedAsset?.file);
       if (next) {
         state.selected = next.file;
         state.drawerOpen = true;
-        showToast(`${actionMessage}，已进入下一个素材，后台同步中`);
+        showToast(`${actionMessage}\uff0c\u5df2\u8fdb\u5165\u4e0b\u4e00\u4e2a\u5f85\u5ba1\u6838\u7d20\u6750\uff0c\u540e\u53f0\u540c\u6b65\u4e2d`);
       } else {
         state.drawerOpen = false;
-        showToast(`${actionMessage}，当前列表已完成，后台同步中`);
+        showToast(`${actionMessage}\uff0c\u5f53\u524d\u6ca1\u6709\u66f4\u591a\u5f85\u5ba1\u6838\u7d20\u6750\uff0c\u540e\u53f0\u540c\u6b65\u4e2d`);
       }
       render();
       if (completedAsset?.file) {
         persistRecord(completedAsset.file)
-          .then(() => showToast(`${actionMessage}已同步`))
+          .then(() => showToast(`${actionMessage}\u5df2\u540c\u6b65`))
           .catch((error) => {
             showActionModal({
               type: "error",
-              title: "审批同步失败",
-              message: error.message || "本地已记录，但飞书同步失败，请稍后重试。"
+              title: "\u5ba1\u6279\u540c\u6b65\u5931\u8d25",
+              message: error.message || "\u672c\u5730\u5df2\u8bb0\u5f55\uff0c\u4f46\u98de\u4e66\u540c\u6b65\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002"
             });
           });
       }
+    }
+
+    function assetMatchesSearchAndProduct(asset) {
+      const q = state.query.trim().toLowerCase();
+      const record = state.records[asset.file];
+      const product = getAssetProduct(asset);
+      const searchable = [asset.title, asset.file, asset.scene, product.name, product.sku, record.comment, ...record.tags].join(" ").toLowerCase();
+      const matchQuery = !q || searchable.includes(q);
+      const matchProduct = state.productFilter === "all" || record.productId === state.productFilter;
+      return matchQuery && matchProduct;
+    }
+
+    function getNextPendingAsset(excludeFile = state.selected) {
+      return visibleAssets()
+        .filter((asset) => asset.file !== excludeFile)
+        .filter((asset) => state.records[asset.file]?.status === "pending")
+        .filter(assetMatchesSearchAndProduct)
+        .sort((a, b) => {
+          const recordA = state.records[a.file] || {};
+          const recordB = state.records[b.file] || {};
+          const timeA = dateValue(a.updatedAt || recordA.updatedAt || a.createdAt || recordA.createdAt);
+          const timeB = dateValue(b.updatedAt || recordB.updatedAt || b.createdAt || recordB.createdAt);
+          return timeB - timeA;
+        })[0] || null;
     }
 
     function getNextAsset() {
