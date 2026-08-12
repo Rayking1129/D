@@ -544,6 +544,27 @@ function normalizeProduct(record) {
   };
 }
 
+function normalizeRequest(record) {
+  const fields = record.fields || {};
+  const demo = linkValue(fields["Demo参考"]);
+  return {
+    recordId: record.record_id,
+    requestId: fields["需求ID"] || record.record_id,
+    submitter: fields["提交人邮箱"] || "",
+    productId: fields["关联商品ID"] || "",
+    productName: fields["关联商品名称"] || "",
+    direction: fields["创意方向"] || "",
+    note: fields["备注"] || "",
+    quantity: Number(fields["需要数量"] || 0),
+    dueAt: fields["期望交付日期"] || "",
+    demo,
+    attachments: fields["附件说明"] || "",
+    status: fields["需求状态"] || "待处理",
+    createdAt: fields["创建时间"] || "",
+    updatedAt: fields["更新时间"] || ""
+  };
+}
+
 function parseJsonField(value, fallback) {
   if (!value) return fallback;
   if (typeof value !== "string") return value;
@@ -1216,9 +1237,10 @@ async function getVideoTask(taskId) {
 }
 
 async function getBootstrap() {
-  const [productRecords, assetRecords] = await Promise.all([
+  const [productRecords, assetRecords, requestRecords] = await Promise.all([
     listRecords(CONFIG.productTableId),
-    listRecords(CONFIG.assetTableId)
+    listRecords(CONFIG.assetTableId),
+    CONFIG.requestTableId ? listRecords(CONFIG.requestTableId).catch(() => []) : []
   ]);
   const products = productRecords.map(normalizeProduct);
   products.forEach((product) => { product.cover = fileUrl(product.cover); });
@@ -1244,7 +1266,10 @@ async function getBootstrap() {
   const assets = [...latestByAssetId.values()]
     .map((asset) => ({ ...asset, versionHistory: versionsByAssetId.get(asset.assetId) || [asset] }))
     .sort((a, b) => a.title.localeCompare(b.title));
-  return { products, assets, allVersionCount: allAssets.length };
+  const requests = requestRecords
+    .map(normalizeRequest)
+    .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+  return { products, assets, requests, allVersionCount: allAssets.length };
 }
 
 async function updateAsset(user, recordId, patch) {

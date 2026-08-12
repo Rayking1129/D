@@ -483,6 +483,68 @@
       min-height: 48px;
     }
 
+    .request-history {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(255,255,255,.94);
+      border-radius: 8px;
+      box-shadow: 0 18px 48px rgba(0,0,0,.06);
+    }
+
+    .request-history-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .request-history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .request-item {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fff, #fbfbfd);
+    }
+
+    .request-item-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .request-item h3 {
+      margin: 0 0 5px;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .request-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .request-note-preview {
+      color: #3a3a3c;
+      font-size: 13px;
+      line-height: 1.55;
+      padding: 10px 11px;
+      border-radius: 8px;
+      background: #f6f6f8;
+      border: 1px solid rgba(0,0,0,.04);
+    }
+
     .production-view {
       display: none;
       grid-template-columns: minmax(360px, .82fr) minmax(0, 1.18fr);
@@ -2156,6 +2218,16 @@
               </label>
               <button class="btn" type="submit">提交需求</button>
             </form>
+            <section class="request-history">
+              <div class="request-history-head">
+                <div>
+                  <div class="eyebrow">Request History</div>
+                  <h2>历史需求单</h2>
+                </div>
+                <span class="muted" id="requestHistorySummary"></span>
+              </div>
+              <div class="request-history-list" id="requestHistoryList"></div>
+            </section>
           </div>
           <div class="asset-grid" id="assetGrid"></div>
           <div class="table-view" id="tableView">
@@ -2294,6 +2366,7 @@
       statusFilter: "all",
       selectedProductId: "",
       productGalleryIndex: 0,
+      requests: [],
     };
 
     let backendRefreshTimer = null;
@@ -2443,6 +2516,7 @@
         const data = await response.json();
         products = data.products.length ? data.products : products;
         assets = data.assets.length ? data.assets : assets;
+        state.requests = Array.isArray(data.requests) ? data.requests : [];
         state.allVersionCount = data.allVersionCount || assets.length;
         state.records = Object.fromEntries(assets.map((asset) => [asset.file, asset.review || {
           productId: "dunk-panda",
@@ -2863,6 +2937,57 @@
         $("requestDueAt").value = date.toISOString().slice(0, 10);
       }
       if (!$("requestQuantity").value) $("requestQuantity").value = "30";
+    }
+
+    function requestDate(value) {
+      if (!value) return "";
+      const number = Number(value);
+      const date = Number.isFinite(number) && number > 0 ? new Date(number) : new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" });
+    }
+
+    function requestDateTime(value) {
+      if (!value) return "";
+      const number = Number(value);
+      const date = Number.isFinite(number) && number > 0 ? new Date(number) : new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function renderRequestHistory() {
+      const list = [...(state.requests || [])].sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      if ($("requestHistorySummary")) $("requestHistorySummary").textContent = list.length ? `${list.length} 条历史记录` : "暂无历史记录";
+      if (!$("requestHistoryList")) return;
+      if (!list.length) {
+        $("requestHistoryList").innerHTML = `<div class="empty"><h4>暂无历史需求</h4><p>提交新的需求后，会在这里形成记录。</p></div>`;
+        return;
+      }
+      $("requestHistoryList").innerHTML = list.map((request) => {
+        const meta = [
+          request.requestId,
+          request.direction || "无强要求",
+          request.quantity ? `${request.quantity} 条` : "",
+          request.dueAt ? `期望 ${requestDate(request.dueAt)}` : "",
+          request.submitter || "",
+          request.createdAt ? `创建 ${requestDateTime(request.createdAt)}` : ""
+        ].filter(Boolean);
+        const attachments = String(request.attachments || "").split(",").map((item) => item.trim()).filter(Boolean);
+        return `
+          <article class="request-item">
+            <div class="request-item-main">
+              <div>
+                <h3>${escapeHtml(request.productName || "未关联商品")}</h3>
+                <div class="request-meta">${meta.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+              </div>
+              <span class="pill pending">${escapeHtml(request.status || "待处理")}</span>
+            </div>
+            ${request.demo ? `<div class="request-meta"><a href="${escapeAttr(request.demo)}" target="_blank" rel="noreferrer">Demo参考</a></div>` : ""}
+            ${request.note ? `<div class="request-note-preview">${escapeHtml(request.note)}</div>` : ""}
+            ${attachments.length ? `<div class="request-meta">${attachments.map((url) => /^https?:\/\//i.test(url) ? `<a href="${escapeAttr(url)}" target="_blank" rel="noreferrer">附件</a>` : `<span>${escapeHtml(url)}</span>`).join("")}</div>` : ""}
+          </article>
+        `;
+      }).join("");
     }
 
     function renderRequestProductPicker() {
@@ -3299,6 +3424,7 @@
       renderProducts();
       renderProductDetail();
       renderRequestForm();
+      renderRequestHistory();
       renderGrid(list);
       renderTable(list);
       renderDrawer();
@@ -3517,6 +3643,8 @@
         );
         $("requestForm").reset();
         renderRequestForm();
+        await preloadBackendData({ preserveSelection: true, silent: true });
+        renderRequestHistory();
         $("requestSuccessText").textContent = `需求 ${data.requestId || data.recordId} 已提交到飞书，制作团队可以开始排期。`;
         showToast("需求提交成功，已写入飞书");
       } catch (error) {
