@@ -215,20 +215,6 @@
         </div>
       </section>
 
-      <!-- Task Queue -->
-      <section class="card">
-        <div class="section-hdr row btw">
-          <div>
-            <p class="eyebrow">Task Queue</p>
-            <h2>生成队列</h2>
-          </div>
-          <span id="taskSummary" class="muted" style="font-size:12px;"></span>
-        </div>
-        <div id="taskQueue">
-          <div class="empty" style="text-align:center;padding:40px 20px;color:var(--muted);"><p>还没有生成任务。</p></div>
-        </div>
-      </section>
-
       <!-- History -->
       <section class="card">
         <div class="section-hdr row btw">
@@ -346,7 +332,11 @@
     }
     function selectedAssets() { return state.assets.filter((a) => a.selectedForVideo); }
     function taskTimeValue(t) {
-      const value = Date.parse(t.updatedAt || t.completedAt || t.createdAt || "");
+      const raw = t.updatedAt || t.completedAt || t.createdAt || "";
+      if (typeof raw === "number") return raw;
+      const numeric = Number(raw);
+      if (Number.isFinite(numeric) && numeric > 0) return numeric;
+      const value = Date.parse(raw);
       return Number.isFinite(value) ? value : 0;
     }
     function formatTaskTime(t) {
@@ -450,30 +440,6 @@
       $("videoSummary").textContent = `${sel.length} 已选 / ${state.selectedModelIds.size} 模型`;
     }
     function renderTasks() {
-      const tasks = state.tasks;
-      $("taskSummary").textContent = tasks.length ? `${tasks.length} 任务` : "";
-      if (!tasks.length) {
-        $("taskQueue").innerHTML = '<div class="empty" style="text-align:center;padding:40px 20px;color:var(--muted);"><p>还没有生成任务。</p></div>';
-        renderHistory();
-        return;
-      }
-      $("taskQueue").innerHTML = tasks.map((t) => `
-        <div class="task-card">
-          <div class="row btw">
-            <div>
-              <h4 style="font-size:14px;">${html(t.title || "Video Task")}</h4>
-              <span class="muted" style="font-size:11px;">${html(t.modelName || t.model)}${t.copy ? " · 第" + t.copy + "条" : ""}${t.productName ? " · " + html(t.productName) : ""}</span>
-            </div>
-            <span class="status ${t.status}">${taskStatusLabel(t.status)}</span>
-          </div>
-          ${t.url && t.status === "completed" ? `<video src="${html(t.url)}" controls playsinline preload="metadata"></video>` : ""}
-          ${t.error ? `<p style="color:var(--red);font-size:12px;">${html(t.error)}</p>` : ""}
-          <div class="row">
-            ${t.url && t.status === "completed" ? `<a class="btn secondary small" href="${html(t.url)}" target="_blank" rel="noreferrer">打开</a>
-            <button class="green small" data-sync="${html(t.localId)}">同步到素材库</button>` : ""}
-            ${t.status === "failed" ? `<button class="secondary small" data-retry="${html(t.localId)}">重试</button>` : ""}
-          </div>
-        </div>`).join("");
       renderHistory();
     }
     function renderHistory() {
@@ -488,7 +454,7 @@
         const completed = String(t.status).toLowerCase() === "completed";
         return `
           <article class="history-card">
-            ${t.url && completed ? `<video src="${html(t.url)}" controls playsinline preload="metadata"></video>` : `<div class="empty" style="min-height:180px;display:grid;place-items:center;color:var(--muted);">${taskStatusLabel(t.status)}</div>`}
+            ${t.url && completed ? `<video src="${html(t.url)}" controls playsinline preload="none"></video>` : `<div class="empty" style="min-height:180px;display:grid;place-items:center;color:var(--muted);">${taskStatusLabel(t.status)}</div>`}
             <div class="history-body">
               <div class="row btw">
                 <div>
