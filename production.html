@@ -319,7 +319,7 @@
         .filter(Boolean)
         .map((url) => typeof url === "string" ? url : (url.link || url.url || url.text || ""))
         .filter((url) => /^https?:\/\//i.test(url));
-      return [...new Set(urls)].slice(0, 6);
+      return [...new Set(urls)].slice(0, 9);
     }
     function inferProductForTask(task) {
       const explicit = activeProducts().find((p) =>
